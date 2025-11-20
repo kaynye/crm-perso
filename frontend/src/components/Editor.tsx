@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import EditorJS, { type OutputData } from '@editorjs/editorjs';
 import Header from '@editorjs/header';
 import List from '@editorjs/list';
+import MentionTool from './editor-tools/MentionTool';
 
 interface EditorProps {
     data: OutputData;
@@ -20,6 +21,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false }) => 
                 tools: {
                     header: Header,
                     list: List,
+                    mention: MentionTool,
                 },
                 data: data,
                 readOnly: readOnly,
