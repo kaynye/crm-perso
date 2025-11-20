@@ -1,0 +1,6 @@
+django
+djangorestframework
+djangorestframework-simplejwt
+pymysql
+django-cors-headers
+python-dotenv
