@@ -10,6 +10,7 @@ import ContactList from './pages/crm/ContactList';
 import TaskBoard from './pages/tasks/TaskBoard';
 
 import DatabaseView from './components/database/DatabaseView';
+import Home from './pages/Home';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -32,7 +33,7 @@ const AppRoutes: React.FC = () => {
           <Layout />
         </ProtectedRoute>
       }>
-        <Route index element={<div className="p-12 text-gray-500">Select a page to start writing</div>} />
+        <Route index element={<Home />} />
         <Route path="pages/:id" element={<PageDetail />} />
         <Route path="crm/companies" element={<CompanyList />} />
         <Route path="crm/companies/:id" element={<CompanyDetail />} />
