@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, ChevronDown, FileText, Plus } from 'lucide-react';
+import { ChevronRight, ChevronDown, FileText, Plus, Database as DatabaseIcon } from 'lucide-react';
 import api from '../api/axios';
 import clsx from 'clsx';
 
@@ -9,6 +9,7 @@ interface PageNode {
     title: string;
     page_type: string;
     children: PageNode[];
+    database_id?: string;
 }
 
 const SidebarItem: React.FC<{ node: PageNode; level?: number }> = ({ node, level = 0 }) => {
@@ -22,6 +23,14 @@ const SidebarItem: React.FC<{ node: PageNode; level?: number }> = ({ node, level
         setIsOpen(!isOpen);
     };
 
+    const handleClick = () => {
+        if (node.page_type === 'database' && node.database_id) {
+            navigate(`/databases/${node.database_id}`);
+        } else {
+            navigate(`/pages/${node.id}`);
+        }
+    };
+
     return (
         <div>
             <div
@@ -29,7 +38,7 @@ const SidebarItem: React.FC<{ node: PageNode; level?: number }> = ({ node, level
                     "flex items-center px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer group",
                     level > 0 && "ml-4"
                 )}
-                onClick={() => navigate(`/pages/${node.id}`)}
+                onClick={handleClick}
             >
                 <button
                     onClick={handleToggle}
@@ -40,7 +49,11 @@ const SidebarItem: React.FC<{ node: PageNode; level?: number }> = ({ node, level
                 >
                     {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 </button>
-                <FileText size={14} className="mr-2 text-gray-500" />
+                {node.page_type === 'database' ? (
+                    <DatabaseIcon size={14} className="mr-2 text-gray-500" />
+                ) : (
+                    <FileText size={14} className="mr-2 text-gray-500" />
+                )}
                 <span className="truncate">{node.title}</span>
             </div>
             {isOpen && hasChildren && (
@@ -81,6 +94,22 @@ const Sidebar: React.FC = () => {
         }
     };
 
+    const createDatabase = async () => {
+        try {
+            // 1. Create Page
+            const pageResponse = await api.post('/pages/', { title: 'New Database', page_type: 'database', content: '{}' });
+            const pageId = pageResponse.data.id;
+
+            // 2. Create Database linked to Page
+            const dbResponse = await api.post('/databases/', { title: 'New Database', page: pageId });
+
+            fetchPages();
+            navigate(`/databases/${dbResponse.data.id}`);
+        } catch (error) {
+            console.error("Failed to create database", error);
+        }
+    };
+
     return (
         <div className="w-64 h-screen bg-gray-50 border-r border-gray-200 flex flex-col">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
@@ -105,9 +134,14 @@ const Sidebar: React.FC = () => {
             </div>
             <div className="px-4 pt-4 pb-2 border-t border-gray-200 flex justify-between items-center">
                 <span className="font-semibold text-gray-700">Pages</span>
-                <button onClick={createPage} className="p-1 hover:bg-gray-200 rounded">
-                    <Plus size={16} />
-                </button>
+                <div className="flex space-x-1">
+                    <button onClick={createPage} className="p-1 hover:bg-gray-200 rounded" title="New Page">
+                        <Plus size={16} />
+                    </button>
+                    <button onClick={createDatabase} className="p-1 hover:bg-gray-200 rounded" title="New Database">
+                        <DatabaseIcon size={16} />
+                    </button>
+                </div>
             </div>
             <div className="flex-1 overflow-y-auto py-2">
                 {pages.map((page) => (

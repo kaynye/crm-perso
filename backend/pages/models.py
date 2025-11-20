@@ -11,6 +11,7 @@ class Page(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     parent = models.ForeignKey('self', null=True, blank=True, related_name='children', on_delete=models.CASCADE)
     company = models.ForeignKey('crm.Company', null=True, blank=True, related_name='pages', on_delete=models.SET_NULL)
+    database = models.ForeignKey('databases.Database', null=True, blank=True, related_name='rows', on_delete=models.CASCADE)
     path = models.TextField(db_index=True, editable=False)
     title = models.CharField(max_length=255)
     content = models.TextField(default='{}', blank=True) # JSON for Editor.js

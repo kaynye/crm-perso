@@ -9,6 +9,8 @@ import CompanyDetail from './pages/crm/CompanyDetail';
 import ContactList from './pages/crm/ContactList';
 import TaskBoard from './pages/tasks/TaskBoard';
 
+import DatabaseView from './components/database/DatabaseView';
+
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -36,6 +38,7 @@ const AppRoutes: React.FC = () => {
         <Route path="crm/companies/:id" element={<CompanyDetail />} />
         <Route path="crm/contacts" element={<ContactList />} />
         <Route path="tasks" element={<TaskBoard />} />
+        <Route path="databases/:id" element={<DatabaseView />} />
       </Route>
     </Routes>
   );

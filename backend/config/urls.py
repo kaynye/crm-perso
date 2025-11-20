@@ -7,4 +7,5 @@ urlpatterns = [
     path('api/', include('pages.urls')),
     path('api/crm/', include('crm.urls')),
     path('api/', include('tasks.urls')),
+    path('api/', include('databases.urls')),
 ]

@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'pages',
     'crm',
     'tasks',
+    'databases',
 ]
 
 MIDDLEWARE = [
