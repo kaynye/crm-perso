@@ -3,6 +3,7 @@ import EditorJS, { type OutputData } from '@editorjs/editorjs';
 import Header from '@editorjs/header';
 import List from '@editorjs/list';
 import MentionTool from './editor-tools/MentionTool';
+import DatabaseTool from './editor-tools/DatabaseTool';
 
 interface EditorProps {
     data: OutputData;
@@ -22,6 +23,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false }) => 
                     header: Header,
                     list: List,
                     mention: MentionTool,
+                    database: DatabaseTool,
                 },
                 data: data,
                 readOnly: readOnly,

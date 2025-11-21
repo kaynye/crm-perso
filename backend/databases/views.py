@@ -54,6 +54,49 @@ class DatabaseViewSet(viewsets.ModelViewSet):
             
             return Response(RowSerializer(page).data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=['get'])
+    def kanban(self, request, pk=None):
+        database = self.get_object()
+        group_by_id = request.query_params.get('group_by')
+
+        if not group_by_id:
+            return Response({'error': 'group_by parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            group_property = Property.objects.get(id=group_by_id, database=database)
+        except Property.DoesNotExist:
+            return Response({'error': 'Property not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if group_property.type != 'select':
+            return Response({'error': 'Group by property must be of type "select"'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get all rows
+        rows = Page.objects.filter(database=database)
+        
+        # Get options from config
+        options = group_property.config.get('options', [])
+        
+        # Initialize groups
+        grouped_data = {opt: [] for opt in options}
+        grouped_data['No Status'] = []
+
+        # Fetch rows with their values
+        # This is N+1 query prone, but for MVP it's fine. 
+        # Optimally we'd prefetch property_values.
+        for row in rows:
+            row_data = RowSerializer(row).data
+            
+            # Find value for group_property
+            val_obj = row.property_values.filter(property=group_property).first()
+            val = val_obj.value if val_obj else None
+
+            if val and val in grouped_data:
+                grouped_data[val].append(row_data)
+            else:
+                grouped_data['No Status'].append(row_data)
+
+        return Response(grouped_data)
+
     @action(detail=True, methods=['post'])
     def properties(self, request, pk=None):
         database = self.get_object()

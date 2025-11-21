@@ -4,18 +4,31 @@ import { Plus } from 'lucide-react';
 
 interface TableViewProps {
     database: any;
+    filters?: any[];
 }
 
-const TableView: React.FC<TableViewProps> = ({ database }) => {
+const TableView: React.FC<TableViewProps> = ({ database, filters = [] }) => {
     const [rows, setRows] = useState<any[]>([]);
 
     useEffect(() => {
         fetchRows();
-    }, [database.id]);
+    }, [database.id, filters]);
 
     const fetchRows = async () => {
         try {
-            const response = await api.get(`/databases/${database.id}/rows/`);
+            let url = `/databases/${database.id}/rows/`;
+            if (filters.length > 0) {
+                const filterObj: Record<string, any> = {};
+                filters.forEach(f => {
+                    if (f.value !== '') {
+                        filterObj[f.propertyId] = f.value;
+                    }
+                });
+                if (Object.keys(filterObj).length > 0) {
+                    url += `?filter=${JSON.stringify(filterObj)}`;
+                }
+            }
+            const response = await api.get(url);
             setRows(response.data);
         } catch (error) {
             console.error("Failed to fetch rows", error);
