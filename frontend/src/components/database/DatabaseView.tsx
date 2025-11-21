@@ -26,10 +26,25 @@ const DatabaseView: React.FC = () => {
 
     const addProperty = async () => {
         const name = prompt("Property Name:");
-        const type = prompt("Property Type (text, number, select, checkbox):", "text");
+        const type = prompt("Property Type (text, number, select, checkbox, relation):", "text");
+
+        let config = {};
+        if (type === 'select') {
+            const optionsStr = prompt("Enter options separated by comma (e.g. Todo,Done):");
+            if (optionsStr) {
+                config = { options: optionsStr.split(',').map(o => o.trim()) };
+            }
+        } else if (type === 'relation') {
+            // For MVP, we just ask for a database ID. In real app, we'd show a dropdown of databases.
+            const relatedDbId = prompt("Enter related Database ID:");
+            if (relatedDbId) {
+                config = { related_database_id: relatedDbId };
+            }
+        }
+
         if (name && type) {
             try {
-                await api.post(`/databases/${id}/properties/`, { name, type });
+                await api.post(`/databases/${id}/properties/`, { name, type, config });
                 fetchDatabase();
             } catch (error) {
                 console.error("Failed to add property", error);

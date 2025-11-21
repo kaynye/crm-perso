@@ -25,6 +25,7 @@ class Property(models.Model):
         ('select', 'Select'),
         ('checkbox', 'Checkbox'),
         ('date', 'Date'),
+        ('relation', 'Relation'),
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

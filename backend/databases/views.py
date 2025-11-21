@@ -15,6 +15,21 @@ class DatabaseViewSet(viewsets.ModelViewSet):
         
         if request.method == 'GET':
             rows = Page.objects.filter(database=database)
+            
+            # Filtering
+            filter_param = request.query_params.get('filter')
+            if filter_param:
+                import json
+                try:
+                    filters = json.loads(filter_param)
+                    # filters example: {"property_id": "value"}
+                    for prop_id, value in filters.items():
+                        # This is a bit complex with EAV. We need to filter pages that have a PropertyValue 
+                        # with this property and value.
+                        rows = rows.filter(property_values__property_id=prop_id, property_values__value=value)
+                except json.JSONDecodeError:
+                    pass
+
             serializer = RowSerializer(rows, many=True)
             return Response(serializer.data)
         
@@ -25,7 +40,7 @@ class DatabaseViewSet(viewsets.ModelViewSet):
                 title=title,
                 database=database,
                 page_type='database_row',
-                parent=database.parent_page # Optional: keep hierarchy
+                parent=database.page # Optional: keep hierarchy
             )
             
             # Handle initial property values if provided

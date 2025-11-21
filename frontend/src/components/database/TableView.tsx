@@ -64,9 +64,21 @@ const TableView: React.FC<TableViewProps> = ({ database }) => {
                                 </td>
                                 {database.properties.map((prop: any) => {
                                     const val = row.values.find((v: any) => v.property === prop.id);
+                                    let displayValue = '-';
+
+                                    if (val) {
+                                        if (prop.type === 'select') {
+                                            displayValue = val.value; // Just text for now
+                                        } else if (prop.type === 'checkbox') {
+                                            displayValue = val.value ? '☑' : '☐';
+                                        } else {
+                                            displayValue = JSON.stringify(val.value);
+                                        }
+                                    }
+
                                     return (
                                         <td key={prop.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-200">
-                                            {val ? JSON.stringify(val.value) : '-'}
+                                            {displayValue}
                                         </td>
                                     );
                                 })}

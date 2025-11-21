@@ -3,6 +3,8 @@ from .models import Database, Property, PropertyValue
 from pages.models import Page
 
 class PropertySerializer(serializers.ModelSerializer):
+    database = serializers.ReadOnlyField(source='database.id')
+
     class Meta:
         model = Property
         fields = '__all__'
