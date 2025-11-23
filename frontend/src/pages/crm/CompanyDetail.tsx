@@ -50,7 +50,7 @@ const CompanyDetail: React.FC = () => {
             </div>
 
             <h3 className="text-lg font-medium text-gray-900 mb-4">Contacts</h3>
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+            <div className="bg-white shadow sm:rounded-md">
                 <ul className="divide-y divide-gray-200">
                     {company.contacts && company.contacts.map((contact: any) => (
                         <li key={contact.id}>

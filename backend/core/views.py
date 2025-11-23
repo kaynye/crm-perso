@@ -1,5 +1,6 @@
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import AllowAny
+from rest_framework import viewsets
 from .serializers import UserSerializer
 
 from rest_framework.views import APIView
@@ -163,3 +164,9 @@ class DashboardView(APIView):
             'recent_pages': recent_pages_data,
             'my_tasks': my_tasks_data
         })
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    from django.contrib.auth import get_user_model
+    queryset = get_user_model().objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]

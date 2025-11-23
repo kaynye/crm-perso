@@ -16,12 +16,11 @@ export default class MentionTool {
         };
     }
 
-    private api: any;
-    private button: HTMLButtonElement | null;
-    private _state: boolean;
+    private config: any;
 
-    constructor({ api }: { api: any }) {
+    constructor({ api, config }: { api: any, config: any }) {
         this.api = api;
+        this.config = config || {};
         this.button = null;
         this._state = false;
     }
@@ -45,47 +44,11 @@ export default class MentionTool {
     }
 
     wrap(range: Range) {
-        const query = prompt('Search for mention (Page, Company, Contact, Task):');
-        if (!query) return;
-
-        // We need to handle async search here, which is tricky in surround()
-        // So we'll do a quick fetch and then insert.
-        // Note: This blocks the UI, which is not ideal but works for MVP.
-        // A better way is to show a custom UI.
-
-        api.get(`/search/mentions/?q=${query}`)
-            .then(response => {
-                const results = response.data;
-                if (results.length === 0) {
-                    alert('No results found');
-                    return;
-                }
-
-                // Simple selection for MVP
-                const selection = results.map((r: any, i: number) => `${i + 1}. ${r.label} (${r.type})`).join('\n');
-                const choice = prompt(`Select item:\n${selection}`);
-
-                if (!choice) return;
-                const index = parseInt(choice) - 1;
-                if (index >= 0 && index < results.length) {
-                    const item = results[index];
-                    const link = document.createElement('a');
-                    link.href = item.url;
-                    link.innerText = `@${item.label}`;
-                    link.dataset.id = item.id;
-                    link.dataset.type = item.type;
-                    link.classList.add('mention-link', 'text-blue-600', 'bg-blue-50', 'px-1', 'rounded', 'no-underline');
-
-                    range.deleteContents();
-                    range.insertNode(link);
-
-                    this.api.selection.expandToTag(link);
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('Search failed');
-            });
+        if (this.config.onMentionRequest) {
+            this.config.onMentionRequest(range);
+        } else {
+            console.warn("MentionTool: onMentionRequest config is missing");
+        }
     }
 
     unwrap(range: Range) {

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
-import { Plus } from 'lucide-react';
+import { Plus, ExternalLink } from 'lucide-react';
+import ActionsMenu from '../../components/ActionsMenu';
 
 const CompanyList: React.FC = () => {
     const [companies, setCompanies] = useState<any[]>([]);
@@ -32,41 +33,67 @@ const CompanyList: React.FC = () => {
         }
     };
 
+    const deleteCompany = async (id: string) => {
+        try {
+            await api.delete(`/crm/companies/${id}/`);
+            fetchCompanies();
+        } catch (error) {
+            console.error("Failed to delete company", error);
+        }
+    };
+
     return (
-        <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Companies</h1>
-                <button onClick={createCompany} className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+        <div className="p-8 max-w-7xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Companies</h1>
+                <button onClick={createCompany} className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm text-sm font-medium">
                     <Plus size={16} className="mr-2" />
                     New Company
                 </button>
             </div>
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul className="divide-y divide-gray-200">
-                    {companies.map((company) => (
-                        <li key={company.id}>
-                            <div onClick={() => navigate(`/crm/companies/${company.id}`)} className="block hover:bg-gray-50 cursor-pointer">
-                                <div className="px-4 py-4 sm:px-6">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-sm font-medium text-indigo-600 truncate">{company.name}</p>
-                                        <div className="ml-2 flex-shrink-0 flex">
-                                            <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                {company.industry || 'No Industry'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="mt-2 sm:flex sm:justify-between">
-                                        <div className="sm:flex">
-                                            <p className="flex items-center text-sm text-gray-500">
-                                                {company.website || 'No Website'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
+
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-100">
+                    <thead className="bg-gray-50/50">
+                        <tr>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Industry</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Website</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created</th>
+                            <th className="relative px-6 py-4">
+                                <span className="sr-only">Actions</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-100">
+                        {companies.map((company) => (
+                            <tr key={company.id} className="hover:bg-gray-50/80 transition-colors group">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <Link to={`/crm/companies/${company.id}`} className="text-gray-900 hover:text-black font-medium">
+                                        {company.name}
+                                    </Link>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.industry || '-'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {company.website ? (
+                                        <a href={company.website} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center">
+                                            {company.website} <ExternalLink size={12} className="ml-1" />
+                                        </a>
+                                    ) : '-'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {new Date(company.created_at).toLocaleDateString()}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <ActionsMenu
+                                        onEdit={() => navigate(`/crm/companies/${company.id}`)}
+                                        onDelete={() => deleteCompany(company.id)}
+                                    />
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );

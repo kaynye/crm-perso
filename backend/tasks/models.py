@@ -28,6 +28,7 @@ class Task(models.Model):
     
     due_date = models.DateTimeField(null=True, blank=True)
     tags = models.CharField(max_length=255, blank=True)
+    category = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
