@@ -4,7 +4,11 @@ import { Plus, X } from 'lucide-react';
 import ActionsMenu from '../../components/ActionsMenu';
 import TaskDetail from './TaskDetail';
 
-const TaskBoard: React.FC = () => {
+interface TaskBoardProps {
+    filter?: Record<string, any>;
+}
+
+const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
     const [tasks, setTasks] = useState<any>({ todo: [], in_progress: [], done: [] });
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
@@ -12,11 +16,12 @@ const TaskBoard: React.FC = () => {
 
     useEffect(() => {
         fetchTasks();
-    }, []);
+    }, [filter]);
 
     const fetchTasks = async () => {
         try {
-            const response = await api.get('/tasks/kanban/');
+            const params = filter ? new URLSearchParams(filter).toString() : '';
+            const response = await api.get(`/tasks/kanban/?${params}`);
             setTasks(response.data);
         } catch (error) {
             console.error("Failed to fetch tasks", error);
@@ -27,7 +32,11 @@ const TaskBoard: React.FC = () => {
         e.preventDefault();
         if (newTaskTitle) {
             try {
-                await api.post('/tasks/', { title: newTaskTitle, status: 'todo' });
+                await api.post('/tasks/', {
+                    title: newTaskTitle,
+                    status: 'todo',
+                    ...filter
+                });
                 fetchTasks();
                 setNewTaskTitle('');
                 setIsNewTaskModalOpen(false);
@@ -70,7 +79,7 @@ const TaskBoard: React.FC = () => {
     };
 
     const renameTask = async (task: any) => {
-        const newTitle = prompt("Rename Task:", task.title);
+        const newTitle = prompt("Renommer la tâche :", task.title);
         if (newTitle && newTitle !== task.title) {
             try {
                 await api.patch(`/tasks/${task.id}/`, { title: newTitle });
@@ -118,7 +127,7 @@ const TaskBoard: React.FC = () => {
                             )}
                             {task.due_date && (
                                 <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100">
-                                    {new Date(task.due_date).toLocaleDateString()}
+                                    {new Date(task.due_date).toLocaleDateString('fr-FR')}
                                 </span>
                             )}
                         </div>
@@ -135,16 +144,16 @@ const TaskBoard: React.FC = () => {
     return (
         <div className="p-4 md:p-8 h-full flex flex-col bg-white">
             <div className="flex justify-between items-center mb-6 md:mb-8">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Task Board</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Tableau des Tâches</h1>
                 <button onClick={() => setIsNewTaskModalOpen(true)} className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm text-sm font-medium">
                     <Plus size={16} className="mr-2" />
-                    New Task
+                    Nouvelle Tâche
                 </button>
             </div>
             <div className="flex flex-1 overflow-x-auto pb-4 -mx-2 px-2 snap-x snap-mandatory">
-                <Column title="To Do" status="todo" items={tasks.todo || []} />
-                <Column title="In Progress" status="in_progress" items={tasks.in_progress || []} />
-                <Column title="Done" status="done" items={tasks.done || []} />
+                <Column title="À faire" status="todo" items={tasks.todo || []} />
+                <Column title="En cours" status="in_progress" items={tasks.in_progress || []} />
+                <Column title="Terminé" status="done" items={tasks.done || []} />
             </div>
 
             {/* Task Detail Sidebar/Modal */}
@@ -161,7 +170,7 @@ const TaskBoard: React.FC = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animate-scale-in">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg font-bold text-gray-900">New Task</h2>
+                            <h2 className="text-lg font-bold text-gray-900">Nouvelle Tâche</h2>
                             <button onClick={() => setIsNewTaskModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                                 <X size={20} />
                             </button>
@@ -170,7 +179,7 @@ const TaskBoard: React.FC = () => {
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder="What needs to be done?"
+                                placeholder="Que faut-il faire ?"
                                 className="w-full border border-gray-200 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                                 value={newTaskTitle}
                                 onChange={(e) => setNewTaskTitle(e.target.value)}
@@ -181,14 +190,14 @@ const TaskBoard: React.FC = () => {
                                     onClick={() => setIsNewTaskModalOpen(false)}
                                     className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
                                 >
-                                    Cancel
+                                    Annuler
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={!newTaskTitle.trim()}
                                     className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Create Task
+                                    Créer la tâche
                                 </button>
                             </div>
                         </form>

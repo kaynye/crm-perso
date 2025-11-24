@@ -22,8 +22,8 @@ const ContactList: React.FC = () => {
 
     const createContact = async () => {
         // Simplified creation for now
-        const firstName = prompt("First Name:");
-        const lastName = prompt("Last Name:");
+        const firstName = prompt("Prénom :");
+        const lastName = prompt("Nom :");
         if (firstName && lastName) {
             try {
                 await api.post('/crm/contacts/', { first_name: firstName, last_name: lastName });
@@ -44,8 +44,8 @@ const ContactList: React.FC = () => {
     };
 
     const editContact = async (contact: any) => {
-        const firstName = prompt("First Name:", contact.first_name);
-        const lastName = prompt("Last Name:", contact.last_name);
+        const firstName = prompt("Prénom :", contact.first_name);
+        const lastName = prompt("Nom :", contact.last_name);
         if (firstName && lastName) {
             try {
                 await api.patch(`/crm/contacts/${contact.id}/`, { first_name: firstName, last_name: lastName });
@@ -62,7 +62,7 @@ const ContactList: React.FC = () => {
                 <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Contacts</h1>
                 <button onClick={createContact} className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm text-sm font-medium">
                     <Plus size={16} className="mr-2" />
-                    New Contact
+                    Nouveau Contact
                 </button>
             </div>
 
@@ -70,10 +70,10 @@ const ContactList: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-100">
                     <thead className="bg-gray-50/50">
                         <tr>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom</th>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Company</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Téléphone</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Entreprise</th>
                             <th className="relative px-6 py-4">
                                 <span className="sr-only">Actions</span>
                             </th>

@@ -79,7 +79,7 @@ const KanbanView: React.FC<KanbanViewProps> = ({ database, groupByProperty }) =>
 
                 // Alternative: Implement a helper endpoint or use a smart update.
                 // Let's try to find the value in the row data.
-                const val = movedRow.values.find((v: any) => v.property_name === groupByProperty.name); // Note: serializer uses property_name
+
                 // Wait, serializer uses property_name/type but we need ID to find it in the list?
                 // RowSerializer: values = PropertyValueSerializer(many=True)
                 // PropertyValueSerializer: id, page, property, value...
@@ -107,7 +107,7 @@ const KanbanView: React.FC<KanbanViewProps> = ({ database, groupByProperty }) =>
         }
     };
 
-    if (loading) return <div className="p-4">Loading board...</div>;
+    if (loading) return <div className="p-4">Chargement du tableau...</div>;
 
     return (
         <div className="flex h-full overflow-x-auto p-4 space-x-4">
@@ -135,7 +135,7 @@ const KanbanView: React.FC<KanbanViewProps> = ({ database, groupByProperty }) =>
                             </div>
                         ))}
                         <button className="w-full py-1.5 text-sm text-gray-500 hover:bg-gray-200 rounded flex items-center justify-center">
-                            <Plus size={14} className="mr-1" /> New
+                            <Plus size={14} className="mr-1" /> Nouveau
                         </button>
                     </div>
                 </div>

@@ -40,7 +40,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ node, level = 0, onRefresh })
     };
 
     const handleDelete = async () => {
-        if (window.confirm('Are you sure you want to delete this page?')) {
+        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette page ?')) {
             try {
                 await api.delete(`/pages/${node.id}/`);
                 onRefresh();
@@ -51,7 +51,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ node, level = 0, onRefresh })
     };
 
     const handleRename = async () => {
-        const newTitle = prompt("Enter new page title:", node.title);
+        const newTitle = prompt("Entrez le nouveau titre de la page :", node.title);
         if (newTitle && newTitle !== node.title) {
             try {
                 await api.patch(`/pages/${node.id}/`, { title: newTitle });
@@ -166,7 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
     const createPage = async () => {
         try {
-            const response = await api.post('/pages/', { title: 'Untitled', content: '{}' });
+            const response = await api.post('/pages/', { title: 'Sans titre', content: '{}' });
             fetchPages();
             navigate(`/pages/${response.data.id}`);
         } catch (error) {
@@ -177,11 +177,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const createDatabase = async () => {
         try {
             // 1. Create Page
-            const pageResponse = await api.post('/pages/', { title: 'New Database', page_type: 'database', content: '{}' });
+            const pageResponse = await api.post('/pages/', { title: 'Nouvelle Base de données', page_type: 'database', content: '{}' });
             const pageId = pageResponse.data.id;
 
             // 2. Create Database linked to Page
-            const dbResponse = await api.post('/databases/', { title: 'New Database', page: pageId });
+            const dbResponse = await api.post('/databases/', { title: 'Nouvelle Base de données', page: pageId });
 
             fetchPages();
             navigate(`/databases/${dbResponse.data.id}`);
@@ -239,7 +239,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">CRM</div>
                         <div className="space-y-0.5">
                             <div onClick={() => navigate('/crm/companies')} className="flex items-center px-2 py-1.5 text-sm text-gray-300 hover:bg-zinc-800 hover:text-white cursor-pointer rounded-md transition-colors">
-                                <span className="truncate">Companies</span>
+                                <span className="truncate">Entreprises</span>
                             </div>
                             <div onClick={() => navigate('/crm/contacts')} className="flex items-center px-2 py-1.5 text-sm text-gray-300 hover:bg-zinc-800 hover:text-white cursor-pointer rounded-md transition-colors">
                                 <span className="truncate">Contacts</span>
@@ -247,10 +247,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         </div>
                     </div>
                     <div>
-                        <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Tasks</div>
+                        <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Tâches</div>
                         <div className="space-y-0.5">
                             <div onClick={() => navigate('/tasks')} className="flex items-center px-2 py-1.5 text-sm text-gray-300 hover:bg-zinc-800 hover:text-white cursor-pointer rounded-md transition-colors">
-                                <span className="truncate">Board</span>
+                                <span className="truncate">Tableau</span>
                             </div>
                         </div>
                     </div>
@@ -264,12 +264,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                 >
-                    <span className="font-semibold text-gray-300 text-sm">Pages {isDragOver && "(Drop to Un-nest)"}</span>
+                    <span className="font-semibold text-gray-300 text-sm">Pages {isDragOver && "(Déposer pour désimbriquer)"}</span>
                     <div className="flex space-x-1">
-                        <button onClick={createPage} className="p-1 hover:bg-zinc-800 rounded text-gray-500 hover:text-white transition-colors" title="New Page">
+                        <button onClick={createPage} className="p-1 hover:bg-zinc-800 rounded text-gray-500 hover:text-white transition-colors" title="Nouvelle Page">
                             <Plus size={16} />
                         </button>
-                        <button onClick={createDatabase} className="p-1 hover:bg-zinc-800 rounded text-gray-500 hover:text-white transition-colors" title="New Database">
+                        <button onClick={createDatabase} className="p-1 hover:bg-zinc-800 rounded text-gray-500 hover:text-white transition-colors" title="Nouvelle Base de données">
                             <DatabaseIcon size={16} />
                         </button>
                     </div>
@@ -288,7 +288,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     ))}
                     {pages.length === 0 && (
                         <div className="px-4 py-8 text-center text-sm text-gray-500 border-2 border-dashed border-zinc-800 rounded-lg m-2">
-                            No pages yet. Create one or drag here.
+                            Aucune page. Créez-en une ou glissez-déposez ici.
                         </div>
                     )}
                 </div>

@@ -35,17 +35,17 @@ const DatabaseView: React.FC = () => {
     };
 
     const addProperty = async () => {
-        const name = prompt("Property Name:");
-        const type = prompt("Property Type (text, number, select, checkbox, relation):", "text");
+        const name = prompt("Nom de la propriété :");
+        const type = prompt("Type de propriété (text, number, select, checkbox, relation) :", "text");
 
         let config = {};
         if (type === 'select') {
-            const optionsStr = prompt("Enter options separated by comma (e.g. Todo,Done):");
+            const optionsStr = prompt("Entrez les options séparées par une virgule (ex: À faire, Fait) :");
             if (optionsStr) {
                 config = { options: optionsStr.split(',').map(o => o.trim()) };
             }
         } else if (type === 'relation') {
-            const relatedDbId = prompt("Enter related Database ID:");
+            const relatedDbId = prompt("Entrez l'ID de la base de données liée :");
             if (relatedDbId) {
                 config = { related_database_id: relatedDbId };
             }
@@ -61,8 +61,8 @@ const DatabaseView: React.FC = () => {
         }
     };
 
-    if (loading) return <div className="p-8">Loading...</div>;
-    if (!database) return <div className="p-8">Database not found</div>;
+    if (loading) return <div className="p-8">Chargement...</div>;
+    if (!database) return <div className="p-8">Base de données introuvable</div>;
 
     const selectProperties = database.properties.filter((p: any) => p.type === 'select');
 
@@ -75,21 +75,21 @@ const DatabaseView: React.FC = () => {
                         <button
                             onClick={() => setViewMode('table')}
                             className={`p-1.5 rounded ${viewMode === 'table' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                            title="Table View"
+                            title="Vue Tableau"
                         >
                             <TableIcon size={16} />
                         </button>
                         <button
                             onClick={() => setViewMode('board')}
                             className={`p-1.5 rounded ${viewMode === 'board' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                            title="Board View"
+                            title="Vue Kanban"
                         >
                             <LayoutGrid size={16} />
                         </button>
                     </div>
                     {viewMode === 'board' && selectProperties.length > 0 && (
                         <div className="flex items-center space-x-2 text-sm">
-                            <span className="text-gray-500">Group by:</span>
+                            <span className="text-gray-500">Grouper par :</span>
                             <select
                                 value={groupBy}
                                 onChange={(e) => setGroupBy(e.target.value)}
@@ -105,7 +105,7 @@ const DatabaseView: React.FC = () => {
                 <div className="flex space-x-2">
                     <button onClick={addProperty} className="flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
                         <Plus size={14} className="mr-1" />
-                        Add Property
+                        Ajouter une propriété
                     </button>
                 </div>
             </div>
@@ -126,7 +126,7 @@ const DatabaseView: React.FC = () => {
                         />
                     ) : (
                         <div className="text-gray-500 text-center mt-10">
-                            Add a "Select" property to use Board View.
+                            Ajoutez une propriété 'Select' pour utiliser la vue Kanban.
                         </div>
                     )
                 )}

@@ -160,9 +160,21 @@ class DashboardView(APIView):
             'due_date': t.due_date
         } for t in my_tasks]
 
+        # Active Contracts
+        from crm.models import Contract
+        active_contracts = Contract.objects.filter(status='active').order_by('end_date')[:5]
+        active_contracts_data = [{
+            'id': str(c.id),
+            'title': c.title,
+            'company': c.company.name,
+            'end_date': c.end_date,
+            'amount': c.amount
+        } for c in active_contracts]
+
         return Response({
             'recent_pages': recent_pages_data,
-            'my_tasks': my_tasks_data
+            'my_tasks': my_tasks_data,
+            'active_contracts': active_contracts_data
         })
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -170,3 +182,29 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = get_user_model().objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import os
+
+class UploadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if 'image' not in request.FILES and 'file' not in request.FILES:
+            return Response({'success': 0, 'error': 'No file uploaded'})
+
+        file = request.FILES.get('image') or request.FILES.get('file')
+        
+        # Save file
+        path = default_storage.save(f'uploads/{file.name}', ContentFile(file.read()))
+        url = request.build_absolute_uri(default_storage.url(path))
+
+        return Response({
+            'success': 1,
+            'file': {
+                'url': url,
+                'name': file.name,
+                'size': file.size
+            }
+        })

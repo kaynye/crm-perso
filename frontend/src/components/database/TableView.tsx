@@ -50,25 +50,7 @@ const TableView: React.FC<TableViewProps> = ({ database, filters = [] }) => {
         }
     };
 
-    const deleteProperty = async (propId: string) => {
-        try {
-            await api.delete(`/databases/${database.id}/properties/${propId}/`); // Need to implement this endpoint in backend if not exists
-            // Actually PropertyViewSet is not explicitly exposed under databases/id/properties/id in default router usually, 
-            // but let's check urls.py. 
-            // We might need to use /api/properties/ID if we exposed it, or nested router.
-            // Looking at urls.py, we only have DatabaseViewSet.
-            // We need to check if we can delete properties.
-            // Let's assume we can't easily delete properties yet without a ViewSet for them.
-            // Wait, we have PropertyValueViewSet but not PropertyViewSet?
-            // Checking views.py... DatabaseViewSet has 'properties' action (POST).
-            // We need a PropertyViewSet or an action to delete.
-            // Let's skip Delete Property for now or implement it properly.
-            // I'll implement Delete Row first.
-            window.location.reload(); // Simple reload to refresh columns
-        } catch (error) {
-            console.error("Failed to delete property", error);
-        }
-    };
+
 
     return (
         <div className="border border-gray-200 rounded-lg bg-white shadow-sm">
@@ -78,7 +60,7 @@ const TableView: React.FC<TableViewProps> = ({ database, filters = [] }) => {
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-64 group">
                                 <div className="flex justify-between items-center">
-                                    Name
+                                    Nom
                                 </div>
                             </th>
                             {database.properties.map((prop: any) => (
@@ -147,7 +129,7 @@ const TableView: React.FC<TableViewProps> = ({ database, filters = [] }) => {
                         {rows.length === 0 && (
                             <tr>
                                 <td colSpan={database.properties.length + 2} className="px-6 py-8 text-center text-sm text-gray-500">
-                                    No rows. Click + to add one.
+                                    Aucune ligne. Cliquez sur + pour en ajouter une.
                                 </td>
                             </tr>
                         )}
@@ -158,7 +140,7 @@ const TableView: React.FC<TableViewProps> = ({ database, filters = [] }) => {
                 className="bg-gray-50/50 px-6 py-3 border-t border-gray-100 text-sm text-gray-500 cursor-pointer hover:bg-gray-100 transition-colors flex items-center font-medium"
                 onClick={addRow}
             >
-                <Plus size={14} className="mr-2" /> New
+                <Plus size={14} className="mr-2" /> Nouveau
             </div>
         </div>
     );

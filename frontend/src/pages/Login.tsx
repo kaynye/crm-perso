@@ -17,19 +17,19 @@ const Login: React.FC = () => {
             login(response.data.access, response.data.refresh);
             navigate('/');
         } catch (err) {
-            setError('Invalid credentials');
+            setError('Identifiants invalides');
         }
     };
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="w-full max-w-md p-8 space-y-6 bg-white rounded shadow-md">
-                <h2 className="text-2xl font-bold text-center text-gray-900">Sign in to your account</h2>
+                <h2 className="text-2xl font-bold text-center text-gray-900">Connectez-vous à votre compte</h2>
                 {error && <div className="p-2 text-sm text-red-600 bg-red-100 rounded">{error}</div>}
                 <form className="space-y-6" onSubmit={handleSubmit}>
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                            Email address
+                            Adresse e-mail
                         </label>
                         <input
                             id="email"
@@ -43,7 +43,7 @@ const Login: React.FC = () => {
                     </div>
                     <div>
                         <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                            Password
+                            Mot de passe
                         </label>
                         <input
                             id="password"
@@ -59,7 +59,7 @@ const Login: React.FC = () => {
                         type="submit"
                         className="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                        Sign in
+                        Se connecter
                     </button>
                 </form>
             </div>

@@ -12,6 +12,16 @@ class TaskViewSet(viewsets.ModelViewSet):
     def kanban(self, request):
         # Group tasks by status
         tasks = Task.objects.all()
+        
+        # Apply filters
+        contract_id = request.query_params.get('contract')
+        if contract_id:
+            tasks = tasks.filter(contract_id=contract_id)
+            
+        company_id = request.query_params.get('company')
+        if company_id:
+            tasks = tasks.filter(company_id=company_id)
+
         kanban_data = {
             'todo': TaskSerializer(tasks.filter(status='todo'), many=True).data,
             'in_progress': TaskSerializer(tasks.filter(status='in_progress'), many=True).data,

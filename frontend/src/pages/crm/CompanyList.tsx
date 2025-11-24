@@ -22,7 +22,7 @@ const CompanyList: React.FC = () => {
     };
 
     const createCompany = async () => {
-        const name = prompt("Company Name:");
+        const name = prompt("Nom de l'entreprise :");
         if (name) {
             try {
                 const response = await api.post('/crm/companies/', { name });
@@ -45,10 +45,10 @@ const CompanyList: React.FC = () => {
     return (
         <div className="p-8 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Companies</h1>
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Entreprises</h1>
                 <button onClick={createCompany} className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm text-sm font-medium">
                     <Plus size={16} className="mr-2" />
-                    New Company
+                    Nouvelle Entreprise
                 </button>
             </div>
 
@@ -56,10 +56,10 @@ const CompanyList: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-100">
                     <thead className="bg-gray-50/50">
                         <tr>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Industry</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Website</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Secteur</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Site Web</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Créé le</th>
                             <th className="relative px-6 py-4">
                                 <span className="sr-only">Actions</span>
                             </th>
@@ -82,7 +82,7 @@ const CompanyList: React.FC = () => {
                                     ) : '-'}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {new Date(company.created_at).toLocaleDateString()}
+                                    {new Date(company.created_at).toLocaleDateString('fr-FR')}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                                     <ActionsMenu

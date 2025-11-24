@@ -23,6 +23,7 @@ class Task(models.Model):
     
     # Relations
     company = models.ForeignKey('crm.Company', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
+    contract = models.ForeignKey('crm.Contract', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     contact = models.ForeignKey('crm.Contact', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     page = models.ForeignKey('pages.Page', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     

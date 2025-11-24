@@ -5,6 +5,7 @@ import List from '@editorjs/list';
 import MentionTool from './editor-tools/MentionTool';
 import DatabaseTool from './editor-tools/DatabaseTool';
 import MentionModal from './MentionModal';
+import AttachesTool from './editor-tools/AttachesTool';
 import { useNavigate } from 'react-router-dom';
 
 interface EditorProps {
@@ -37,13 +38,29 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false }) => 
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [popover]);
 
+    const initializedData = useRef<OutputData | null>(data);
+
     useEffect(() => {
         if (!ref.current) {
             const editor = new EditorJS({
                 holder: holderId,
                 tools: {
-                    header: Header,
-                    list: List,
+                    header: {
+                        class: Header as any,
+                        config: {
+                            placeholder: 'Titre',
+                            levels: [1, 2, 3],
+                            defaultLevel: 1
+                        },
+                        inlineToolbar: true
+                    },
+                    list: {
+                        class: List,
+                        inlineToolbar: true,
+                        config: {
+                            defaultStyle: 'unordered'
+                        }
+                    },
                     mention: {
                         class: MentionTool as any,
                         config: {
@@ -54,6 +71,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false }) => 
                         }
                     },
                     database: DatabaseTool,
+                    attaches: AttachesTool,
                 },
                 data: data,
                 readOnly: readOnly,
@@ -63,6 +81,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false }) => 
                 },
             });
             ref.current = editor;
+            initializedData.current = data;
         }
 
         return () => {
@@ -71,7 +90,28 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false }) => 
                 ref.current = null;
             }
         };
-    }, []); // Empty dependency array to initialize once. 
+    }, []); // Empty dependency array to initialize once.
+
+    // Update editor data when prop changes
+    useEffect(() => {
+        if (ref.current && data && data.blocks && data.blocks.length > 0) {
+            // If the data is the same as what we initialized with, don't re-render
+            if (data === initializedData.current) {
+                return;
+            }
+
+            ref.current.isReady.then(() => {
+                // Only render if the data is different to avoid cursor jumps/loops
+                // But for templates, we want to force it.
+                // Since we don't update 'data' prop on every keystroke in parent, this is safe.
+                try {
+                    ref.current?.render(data);
+                } catch (e) {
+                    console.error("Editor render error", e);
+                }
+            });
+        }
+    }, [data]);
 
     const handleEditorClick = (e: React.MouseEvent) => {
         const target = e.target as HTMLElement;

@@ -1,71 +1,250 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import { Mail, Phone, MapPin, Plus, Building } from 'lucide-react';
+import clsx from 'clsx';
 
 const CompanyDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const [company, setCompany] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'overview' | 'contracts' | 'meetings'>('overview');
+    const [contracts, setContracts] = useState<any[]>([]);
+    const [meetings, setMeetings] = useState<any[]>([]);
 
     useEffect(() => {
-        const fetchCompany = async () => {
-            try {
-                const response = await api.get(`/crm/companies/${id}/`);
-                setCompany(response.data);
-            } catch (error) {
-                console.error("Failed to fetch company", error);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchCompany();
+        fetchContracts();
+        fetchMeetings();
     }, [id]);
 
-    if (loading) return <div className="p-8">Loading...</div>;
-    if (!company) return <div className="p-8">Company not found</div>;
+    const fetchCompany = async () => {
+        try {
+            const response = await api.get(`/crm/companies/${id}/`);
+            setCompany(response.data);
+        } catch (error) {
+            console.error("Failed to fetch company", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchContracts = async () => {
+        try {
+            const response = await api.get(`/crm/contracts/?company=${id}`);
+            setContracts(response.data);
+        } catch (error) {
+            console.error("Failed to fetch contracts", error);
+        }
+    };
+
+    const fetchMeetings = async () => {
+        try {
+            const response = await api.get(`/crm/meetings/?company=${id}`);
+            setMeetings(response.data);
+        } catch (error) {
+            console.error("Failed to fetch meetings", error);
+        }
+    };
+
+    if (loading) return <div className="p-8">Chargement...</div>;
+    if (!company) return <div className="p-8">Entreprise introuvable</div>;
 
     return (
-        <div className="max-w-4xl mx-auto p-8">
-            <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
-                <div className="px-4 py-5 sm:px-6">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Company Information</h3>
-                    <p className="mt-1 max-w-2xl text-sm text-gray-500">Details and contacts.</p>
+        <div className="flex flex-col h-full bg-gray-50">
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 px-8 py-6">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+                            <Building size={32} />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">{company.name}</h1>
+                            <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                                {company.industry && <span>{company.industry}</span>}
+                                {company.website && (
+                                    <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                                        {company.website}
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => navigate(`/crm/companies/${id}/edit`)}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
+                    >
+                        Modifier l'entreprise
+                    </button>
                 </div>
-                <div className="border-t border-gray-200">
-                    <dl>
-                        <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt className="text-sm font-medium text-gray-500">Name</dt>
-                            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{company.name}</dd>
-                        </div>
-                        <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt className="text-sm font-medium text-gray-500">Industry</dt>
-                            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{company.industry}</dd>
-                        </div>
-                        <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt className="text-sm font-medium text-gray-500">Website</dt>
-                            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{company.website}</dd>
-                        </div>
-                    </dl>
+
+                {/* Tabs */}
+                <div className="flex gap-6 mt-8">
+                    <button
+                        onClick={() => setActiveTab('overview')}
+                        className={clsx(
+                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize",
+                            activeTab === 'overview' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                        )}
+                    >
+                        Aperçu
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('contracts')}
+                        className={clsx(
+                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize",
+                            activeTab === 'contracts' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                        )}
+                    >
+                        Contrats
+                        <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
+                            {contracts.length}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('meetings')}
+                        className={clsx(
+                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize",
+                            activeTab === 'meetings' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                        )}
+                    >
+                        Réunions
+                        <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
+                            {meetings.length}
+                        </span>
+                    </button>
                 </div>
             </div>
 
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Contacts</h3>
-            <div className="bg-white shadow sm:rounded-md">
-                <ul className="divide-y divide-gray-200">
-                    {company.contacts && company.contacts.map((contact: any) => (
-                        <li key={contact.id}>
-                            <div className="px-4 py-4 sm:px-6">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-sm font-medium text-indigo-600 truncate">{contact.first_name} {contact.last_name}</p>
-                                    <p className="text-sm text-gray-500">{contact.email}</p>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+                {activeTab === 'overview' && (
+                    <div className="grid grid-cols-3 gap-6">
+                        <div className="col-span-2 space-y-6">
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4">À propos</h3>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-sm text-gray-500">Téléphone</label>
+                                            <p className="text-gray-900 flex items-center gap-2 mt-1">
+                                                <Phone size={16} className="text-gray-400" />
+                                                {company.phone || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="text-sm text-gray-500">Email</label>
+                                            <p className="text-gray-900 flex items-center gap-2 mt-1">
+                                                <Mail size={16} className="text-gray-400" />
+                                                {company.email || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="text-sm text-gray-500">Adresse</label>
+                                            <p className="text-gray-900 flex items-center gap-2 mt-1">
+                                                <MapPin size={16} className="text-gray-400" />
+                                                {company.address || 'N/A'}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </li>
-                    ))}
-                    {(!company.contacts || company.contacts.length === 0) && (
-                        <li className="px-4 py-4 text-sm text-gray-500">No contacts found.</li>
-                    )}
-                </ul>
+                        </div>
+                        <div className="space-y-6">
+                            {/* Stats or other info could go here */}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'contracts' && (
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-medium text-gray-900">Contrats</h3>
+                            <button
+                                onClick={() => navigate(`/crm/contracts/new?company=${id}`)}
+                                className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
+                            >
+                                <Plus size={16} />
+                                Nouveau Contrat
+                            </button>
+                        </div>
+                        <div className="grid gap-4">
+                            {contracts.map(contract => (
+                                <div
+                                    key={contract.id}
+                                    onClick={() => navigate(`/crm/contracts/${contract.id}`)}
+                                    className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:border-indigo-500 transition-colors"
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h4 className="font-medium text-gray-900">{contract.title}</h4>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                {contract.start_date} - {contract.end_date || 'En cours'}
+                                            </p>
+                                        </div>
+                                        <span className={clsx(
+                                            "px-2 py-1 rounded-full text-xs font-medium capitalize",
+                                            contract.status === 'active' ? "bg-green-100 text-green-800" :
+                                                contract.status === 'draft' ? "bg-gray-100 text-gray-800" :
+                                                    contract.status === 'signed' ? "bg-blue-100 text-blue-800" :
+                                                        "bg-purple-100 text-purple-800"
+                                        )}>
+                                            {contract.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                            {contracts.length === 0 && (
+                                <div className="text-center py-12 bg-white rounded-lg border border-gray-200 border-dashed">
+                                    <p className="text-gray-500">Aucun contrat trouvé</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'meetings' && (
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-medium text-gray-900">Réunions</h3>
+                            <button
+                                onClick={() => navigate(`/crm/meetings/new?company=${id}`)}
+                                className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
+                            >
+                                <Plus size={16} />
+                                Nouvelle Réunion
+                            </button>
+                        </div>
+                        <div className="grid gap-4">
+                            {meetings.map(meeting => (
+                                <div
+                                    key={meeting.id}
+                                    onClick={() => navigate(`/crm/meetings/${meeting.id}`)}
+                                    className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:border-indigo-500 transition-colors"
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h4 className="font-medium text-gray-900">{meeting.title}</h4>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                {new Date(meeting.date).toLocaleString('fr-FR')}
+                                            </p>
+                                        </div>
+                                        <span className="px-2 py-1 bg-gray-100 rounded-full text-xs font-medium capitalize">
+                                            {meeting.type}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                            {meetings.length === 0 && (
+                                <div className="text-center py-12 bg-white rounded-lg border border-gray-200 border-dashed">
+                                    <p className="text-gray-500">Aucune réunion trouvée</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

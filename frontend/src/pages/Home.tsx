@@ -75,7 +75,7 @@ const Home: React.FC = () => {
                                 className="flex items-center p-2 hover:bg-gray-50 rounded border-l-2 border-transparent hover:border-green-500 transition-all"
                             >
                                 <div className={`w-2 h-2 rounded-full mr-3 ${task.priority === 'high' ? 'bg-red-500' :
-                                        task.priority === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'
+                                    task.priority === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'
                                     }`} />
                                 <div className="flex-1">
                                     <div className="text-sm text-gray-800 font-medium">{task.title}</div>
@@ -88,6 +88,39 @@ const Home: React.FC = () => {
                         ))}
                         {data?.my_tasks.length === 0 && (
                             <p className="text-sm text-gray-500">No pending tasks.</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Active Contracts */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="flex items-center mb-4">
+                        <FileText className="w-5 h-5 text-blue-500 mr-2" />
+                        <h2 className="text-lg font-semibold text-gray-800">Active Contracts</h2>
+                    </div>
+                    <div className="space-y-3">
+                        {data?.active_contracts?.map((contract: any) => (
+                            <div
+                                key={contract.id}
+                                onClick={() => navigate(`/crm/contracts/${contract.id}`)}
+                                className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors border-l-2 border-transparent hover:border-blue-500"
+                            >
+                                <div className="flex-1">
+                                    <div className="text-sm text-gray-800 font-medium">{contract.title}</div>
+                                    <div className="text-xs text-gray-500">{contract.company}</div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-sm font-medium text-gray-900">
+                                        {contract.amount ? `$${Number(contract.amount).toLocaleString()}` : '-'}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                        Ends: {contract.end_date ? new Date(contract.end_date).toLocaleDateString() : 'N/A'}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {(!data?.active_contracts || data.active_contracts.length === 0) && (
+                            <p className="text-sm text-gray-500">No active contracts.</p>
                         )}
                     </div>
                 </div>

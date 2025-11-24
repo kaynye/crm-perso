@@ -6,7 +6,12 @@ import Layout from './components/Layout';
 import PageDetail from './pages/PageDetail';
 import CompanyList from './pages/crm/CompanyList';
 import CompanyDetail from './pages/crm/CompanyDetail';
+import CompanyEdit from './pages/crm/CompanyEdit';
 import ContactList from './pages/crm/ContactList';
+import ContractDetail from './pages/crm/ContractDetail';
+import ContractForm from './pages/crm/ContractForm';
+import MeetingDetail from './pages/crm/MeetingDetail';
+import MeetingForm from './pages/crm/MeetingForm';
 import TaskBoard from './pages/tasks/TaskBoard';
 
 import DatabaseView from './components/database/DatabaseView';
@@ -37,7 +42,14 @@ const AppRoutes: React.FC = () => {
         <Route path="pages/:id" element={<PageDetail />} />
         <Route path="crm/companies" element={<CompanyList />} />
         <Route path="crm/companies/:id" element={<CompanyDetail />} />
+        <Route path="crm/companies/:id/edit" element={<CompanyEdit />} />
         <Route path="crm/contacts" element={<ContactList />} />
+        <Route path="crm/contracts/new" element={<ContractForm />} />
+        <Route path="crm/contracts/:id" element={<ContractDetail />} />
+        <Route path="crm/contracts/:id/edit" element={<ContractForm />} />
+        <Route path="crm/meetings/new" element={<MeetingForm />} />
+        <Route path="crm/meetings/:id" element={<MeetingDetail />} />
+        <Route path="crm/meetings/:id/edit" element={<MeetingForm />} />
         <Route path="tasks" element={<TaskBoard />} />
         <Route path="databases/:id" element={<DatabaseView />} />
       </Route>

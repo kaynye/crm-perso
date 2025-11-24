@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../../api/axios';
 import Editor from '../../components/Editor';
 import { X, Calendar, User, Tag, CheckCircle } from 'lucide-react';
-import clsx from 'clsx';
+
 import type { OutputData } from '@editorjs/editorjs';
 
 interface TaskDetailProps {
@@ -102,30 +102,30 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
                     {/* Status */}
                     <div className="flex items-center">
                         <div className="w-32 flex items-center text-gray-500 text-sm">
-                            <CheckCircle size={16} className="mr-2" /> Status
+                            <CheckCircle size={16} className="mr-2" /> Statut
                         </div>
                         <select
                             className="bg-transparent border-none text-sm font-medium text-gray-900 focus:ring-0 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 -ml-2"
                             value={task.status}
                             onChange={(e) => handleSaveField('status', e.target.value)}
                         >
-                            <option value="todo">To Do</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="done">Done</option>
+                            <option value="todo">À faire</option>
+                            <option value="in_progress">En cours</option>
+                            <option value="done">Terminé</option>
                         </select>
                     </div>
 
                     {/* Assigned To */}
                     <div className="flex items-center">
                         <div className="w-32 flex items-center text-gray-500 text-sm">
-                            <User size={16} className="mr-2" /> Assigned to
+                            <User size={16} className="mr-2" /> Assigné à
                         </div>
                         <select
                             className="bg-transparent border-none text-sm text-gray-900 focus:ring-0 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 -ml-2 w-48"
                             value={task.assigned_to || ''}
                             onChange={(e) => handleSaveField('assigned_to', e.target.value || null)}
                         >
-                            <option value="">Unassigned</option>
+                            <option value="">Non assigné</option>
                             {users.map(user => (
                                 <option key={user.id} value={user.id}>{user.username}</option>
                             ))}
@@ -135,7 +135,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
                     {/* Due Date */}
                     <div className="flex items-center">
                         <div className="w-32 flex items-center text-gray-500 text-sm">
-                            <Calendar size={16} className="mr-2" /> Due Date
+                            <Calendar size={16} className="mr-2" /> Date d'échéance
                         </div>
                         <input
                             type="date"
@@ -148,11 +148,11 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
                     {/* Category */}
                     <div className="flex items-center">
                         <div className="w-32 flex items-center text-gray-500 text-sm">
-                            <Tag size={16} className="mr-2" /> Category
+                            <Tag size={16} className="mr-2" /> Catégorie
                         </div>
                         <input
                             type="text"
-                            placeholder="Add a category..."
+                            placeholder="Ajouter une catégorie..."
                             className="bg-transparent border-none text-sm text-gray-900 focus:ring-0 hover:bg-gray-100 rounded px-2 py-1 -ml-2 w-48 placeholder-gray-400"
                             value={task.category || ''}
                             onChange={(e) => setTask({ ...task, category: e.target.value })}
