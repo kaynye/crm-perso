@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
-import { Mail, Phone, MapPin, Plus, Building } from 'lucide-react';
+import { MapPin, Plus, Building } from 'lucide-react';
 import clsx from 'clsx';
 
 const CompanyDetail: React.FC = () => {
@@ -128,24 +128,34 @@ const CompanyDetail: React.FC = () => {
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-sm text-gray-500">Téléphone</label>
-                                            <p className="text-gray-900 flex items-center gap-2 mt-1">
-                                                <Phone size={16} className="text-gray-400" />
-                                                {company.phone || 'N/A'}
-                                            </p>
+                                            <label className="text-sm text-gray-500">Taille</label>
+                                            <p className="text-gray-900 mt-1">{company.size || 'N/A'}</p>
                                         </div>
                                         <div>
-                                            <label className="text-sm text-gray-500">Email</label>
-                                            <p className="text-gray-900 flex items-center gap-2 mt-1">
-                                                <Mail size={16} className="text-gray-400" />
-                                                {company.email || 'N/A'}
-                                            </p>
+                                            <label className="text-sm text-gray-500">Secteur</label>
+                                            <p className="text-gray-900 mt-1">{company.industry || 'N/A'}</p>
                                         </div>
                                         <div className="col-span-2">
                                             <label className="text-sm text-gray-500">Adresse</label>
                                             <p className="text-gray-900 flex items-center gap-2 mt-1">
                                                 <MapPin size={16} className="text-gray-400" />
                                                 {company.address || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="text-sm text-gray-500">Tags</label>
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                {company.tags ? company.tags.split(',').map((tag: string, i: number) => (
+                                                    <span key={i} className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs">
+                                                        {tag.trim()}
+                                                    </span>
+                                                )) : 'Aucun tag'}
+                                            </div>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="text-sm text-gray-500">Notes</label>
+                                            <p className="text-gray-900 mt-1 whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded-md border border-gray-100">
+                                                {company.notes || 'Aucune note'}
                                             </p>
                                         </div>
                                     </div>

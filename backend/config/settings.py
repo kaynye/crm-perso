@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'tasks',
     'databases',
     'ai_assistant',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
