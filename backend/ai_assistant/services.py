@@ -166,9 +166,13 @@ class LLMService:
         CONTEXT FROM DATABASE:
         {context}
         
-        Answer the user's question based on the context provided above. 
-        If the answer is not in the context, use your general knowledge but mention that you couldn't find specific records.
-        Be concise and helpful.
+        INSTRUCTIONS:
+        1. Answer the user's question based on the context provided above.
+        2. AMBIGUITY CHECK: If the user's request is ambiguous because the context contains MULTIPLE relevant entities (e.g., multiple contracts, several meetings on the same topic, or different contacts with similar names), DO NOT guess.
+           - List the available options found in the context.
+           - Ask the user to clarify which specific item they are referring to.
+        3. If the answer is not in the context, use your general knowledge but mention that you couldn't find specific records.
+        4. Be concise and helpful.
         """
 
         # Prepend system prompt
