@@ -14,11 +14,13 @@ class ChatView(APIView):
         # Get the last user message to use for RAG
         last_user_msg = next((m['content'] for m in reversed(messages) if m['role'] == 'user'), "")
         
-        # Call LLM Agent (Handles Intent Detection -> Tool Execution OR RAG)
+        # Call LLM Agent
         llm = LLMService()
-        response_text = llm.run_agent(messages)
+        agent_response = llm.run_agent(messages)
         
+        # agent_response is now a dict { "content": "...", "action": ... }
         return Response({
             'role': 'assistant',
-            'content': response_text
+            'content': agent_response.get('content', ''),
+            'action': agent_response.get('action', None)
         })

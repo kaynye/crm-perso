@@ -21,11 +21,14 @@ class TaskTools:
             due_date=due_date,
             assigned_to=assigned_to
         )
-        
-        msg = f"Task '{title}' created."
-        if assigned_to:
-            msg += f" Assigned to {assigned_to.username}."
-        return msg
+        return {
+            "message": f"Task '{title}' created successfully.",
+            "action": {
+                "type": "NAVIGATE",
+                "label": "View Tasks",
+                "url": "/tasks"
+            }
+        }
 
     @staticmethod
     def extract_and_create_tasks(text, llm_service):

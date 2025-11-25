@@ -15,7 +15,14 @@ class CRMTools:
             }
         )
         if created:
-            return f"Company '{name}' created successfully."
+            return {
+                "message": f"Company '{name}' created successfully.",
+                "action": {
+                    "type": "NAVIGATE",
+                    "label": f"View {name}",
+                    "url": f"/crm/companies/{company.id}"
+                }
+            }
         else:
             return f"Company '{name}' already exists."
 
@@ -52,10 +59,16 @@ class CRMTools:
             title=title,
             company=company,
             amount=amount,
-            status=status,
-            start_date=timezone.now().date()
+            status=status
         )
-        return f"Contract '{title}' created for '{company.name}'."
+        return {
+            "message": f"Contract '{title}' created for {company_name}.",
+            "action": {
+                "type": "NAVIGATE",
+                "label": f"View Contract",
+                "url": f"/crm/contracts/{contract.id}"
+            }
+        }
 
     @staticmethod
     def update_contract_status(title, status):

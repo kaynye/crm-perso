@@ -11,6 +11,7 @@ from django.conf import settings
 from .rag import RAGService
 from .tools.crm import CRMTools
 from .tools.tasks import TaskTools
+from .tools.meetings import MeetingTools
 
 class LLMService:
     def __init__(self):
@@ -48,10 +49,16 @@ class LLMService:
         
         # 2. Execute Tool if applicable
         if tool_name and tool_name != 'SEARCH':
-            return self._execute_tool(tool_name, params, last_user_msg)
+            result = self._execute_tool(tool_name, params, last_user_msg)
+            # If result is a dict (structured action), return it
+            if isinstance(result, dict):
+                return result
+            # If string, wrap it
+            return {"content": str(result)}
             
         # 3. Fallback to RAG Search (Default)
-        return self._run_rag_search(messages, last_user_msg)
+        response_text = self._run_rag_search(messages, last_user_msg)
+        return {"content": response_text}
 
     def _detect_intent(self, query):
         """
@@ -68,11 +75,13 @@ class LLMService:
         - CREATE_CONTRACT: "New contract for Acme", "Draft contract video promotion" (params: title, company_name, amount, status)
         - UPDATE_CONTRACT: "Mark contract X as signed" (params: title, status)
         - CREATE_TASK: "Remind me to call John tomorrow", "New task: Buy milk" (params: title, description, due_date)
+        - CREATE_MEETING: "Schedule call with Acme next Tuesday at 2pm", "Meeting with Bob on 2025-12-01 10:00" (params: title, company_name, date, type)
         - EXTRACT_TASKS: "Extract tasks from these notes", "Make todos from this meeting" (params: text)
         - SEARCH: General questions, "Who is X?", "What did we say about Y?" (No params)
         
         IMPORTANT:
         - For dates (like "tomorrow", "next week", "in 3 days", or "25/12/2025"), calculate the exact date based on CURRENT DATE and return it in 'YYYY-MM-DD' format.
+        - For MEETINGS, include the time if specified (format: 'YYYY-MM-DD HH:MM:SS'). If no time is given, assume 09:00:00.
         
         OUTPUT FORMAT:
         Return ONLY a JSON object.
@@ -109,6 +118,8 @@ class LLMService:
                 return CRMTools.update_contract_status(**params)
             elif tool_name == 'CREATE_TASK':
                 return TaskTools.create_task(**params)
+            elif tool_name == 'CREATE_MEETING':
+                return MeetingTools.create_meeting(**params)
             elif tool_name == 'EXTRACT_TASKS':
                 # For extraction, we might need the full text if the user said "from these notes: [TEXT]"
                 # Or if they refer to previous context, but here we assume the text is in the prompt for now.
