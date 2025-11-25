@@ -8,4 +8,5 @@ urlpatterns = [
     path('api/crm/', include('crm.urls')),
     path('api/', include('tasks.urls')),
     path('api/', include('databases.urls')),
+    path('api/ai/', include('ai_assistant.urls')),
 ]

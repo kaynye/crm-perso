@@ -3,9 +3,9 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
 
@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'crm',
     'tasks',
     'databases',
+    'ai_assistant',
 ]
 
 MIDDLEWARE = [
@@ -112,3 +113,18 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True # For development
+
+# AI Configuration
+AI_CONF = {
+    'PROVIDER': os.getenv('AI_PROVIDER', 'openai'), # 'openai', 'gemini', 'custom'
+    'API_KEY': os.getenv('AI_API_KEY', ''),
+    'BASE_URL': os.getenv('AI_BASE_URL', None), # For custom providers like DeepSeek/Kimi/Ollama
+    'MODEL': os.getenv('AI_MODEL', 'gpt-3.5-turbo'),
+}
+
+# Debug: Print loaded configuration (Masked)
+print(f"DEBUG: AI Provider: {AI_CONF['PROVIDER']}")
+print(f"DEBUG: AI Base URL: {AI_CONF['BASE_URL']}")
+key = AI_CONF['API_KEY']
+masked_key = f"{key[:5]}...{key[-5:]}" if key and len(key) > 10 else "Not Set"
+print(f"DEBUG: AI API Key: {masked_key}")

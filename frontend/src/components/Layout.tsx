@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import CommandPalette from './CommandPalette';
+import ChatWidget from './ai/ChatWidget';
 import { Menu } from 'lucide-react';
 
 const Layout: React.FC = () => {
@@ -29,6 +30,7 @@ const Layout: React.FC = () => {
                 <div className="flex-1 overflow-auto">
                     <CommandPalette />
                     <Outlet />
+                    <ChatWidget />
                 </div>
             </main>
         </div>
