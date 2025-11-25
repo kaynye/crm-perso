@@ -121,10 +121,3 @@ AI_CONF = {
     'BASE_URL': os.getenv('AI_BASE_URL', None), # For custom providers like DeepSeek/Kimi/Ollama
     'MODEL': os.getenv('AI_MODEL', 'gpt-3.5-turbo'),
 }
-
-# Debug: Print loaded configuration (Masked)
-print(f"DEBUG: AI Provider: {AI_CONF['PROVIDER']}")
-print(f"DEBUG: AI Base URL: {AI_CONF['BASE_URL']}")
-key = AI_CONF['API_KEY']
-masked_key = f"{key[:5]}...{key[-5:]}" if key and len(key) > 10 else "Not Set"
-print(f"DEBUG: AI API Key: {masked_key}")

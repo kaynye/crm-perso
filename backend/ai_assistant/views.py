@@ -14,11 +14,14 @@ class ChatView(APIView):
         # Get the last user message to use for RAG
         last_user_msg = next((m['content'] for m in reversed(messages) if m['role'] == 'user'), "")
         
-        # Retrieve Context
-        context = RAGService.get_context(last_user_msg)
-        
-        # Call LLM
+        # Call LLM to extract search terms
         llm = LLMService()
+        search_terms = llm.extract_entities(last_user_msg)
+        
+        # Retrieve Context using extracted terms
+        context = RAGService.get_context(search_terms)
+        
+        # Call LLM for final response
         response_text = llm.chat(messages, context)
         
         return Response({

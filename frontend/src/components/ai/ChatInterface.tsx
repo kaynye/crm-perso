@@ -56,7 +56,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden w-80 sm:w-96">
+        <div className="flex flex-col h-[500px] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden w-80 sm:w-96">
             {/* Header */}
             <div className="bg-indigo-600 p-4 flex justify-between items-center text-white">
                 <div className="flex items-center gap-2">
