@@ -12,6 +12,8 @@ from .rag import RAGService
 from .tools.crm import CRMTools
 from .tools.tasks import TaskTools
 from .tools.meetings import MeetingTools
+from .tools.analytics import AnalyticsTools
+from .tools.content import ContentTools
 
 class LLMService:
     def __init__(self):
@@ -34,14 +36,14 @@ class LLMService:
             
         self.model = self.conf.get('MODEL', 'gpt-3.5-turbo')
 
-    def run_agent(self, messages):
+    def run_agent(self, messages, page_context=None):
         """
         Main entry point. Decides whether to use a Tool or perform RAG Search.
         """
         last_user_msg = next((m['content'] for m in reversed(messages) if m['role'] == 'user'), "")
         
         # 1. Intent Detection
-        intent = self._detect_intent(last_user_msg)
+        intent = self._detect_intent(last_user_msg, page_context)
         print(f"DEBUG: Detected Intent: {intent}")
         
         tool_name = intent.get('tool')
@@ -60,12 +62,38 @@ class LLMService:
         response_text = self._run_rag_search(messages, last_user_msg)
         return {"content": response_text}
 
-    def _detect_intent(self, query):
+    def _detect_intent(self, query, page_context=None):
         """
         Asks LLM to classify the query and extract parameters.
         """
+        context_str = ""
+        if page_context and page_context.get('path'):
+            path = page_context['path']
+            # Simple parsing logic
+            if '/crm/companies/' in path and path.split('/')[-1].isdigit() == False: # UUID check roughly
+                # It's a company detail page
+                # We could fetch the name here if we want to be super smart, but let's just give the ID
+                # Actually, fetching the name is better.
+                from crm.models import Company
+                try:
+                    cid = path.split('/')[-1]
+                    c = Company.objects.get(id=cid)
+                    context_str = f"USER IS VIEWING COMPANY: {c.name} (ID: {cid})"
+                except:
+                    pass
+            elif '/crm/contracts/' in path:
+                 from crm.models import Contract
+                 try:
+                     cid = path.split('/')[-1]
+                     c = Contract.objects.get(id=cid)
+                     context_str = f"USER IS VIEWING CONTRACT: {c.title} (ID: {cid})"
+                 except:
+                     pass
+
         system_prompt = f"""
         You are an AI Orchestrator. Analyze the user's request and map it to one of the available tools.
+        
+        {context_str}
         
         CURRENT DATE: {datetime.now().strftime('%Y-%m-%d')}
         
@@ -76,10 +104,19 @@ class LLMService:
         - UPDATE_CONTRACT: "Mark contract X as signed" (params: title, status)
         - CREATE_TASK: "Remind me to call John tomorrow", "New task: Buy milk" (params: title, description, due_date)
         - CREATE_MEETING: "Schedule call with Acme next Tuesday at 2pm", "Meeting with Bob on 2025-12-01 10:00" (params: title, company_name, date, type)
+        - ADD_NOTE: "Add note 'Called him today'", "Note: Client is happy" (params: note_content, entity_type, entity_id)
+        - ANALYZE_DATA: "Total contracts signed this month", "How many urgent tasks?" (params: entity_type, metric, time_period, filters)
+        - DRAFT_CONTENT: "Draft email to TechNova about contract", "Write follow-up for meeting" (params: entity_type, entity_id, instruction)
         - EXTRACT_TASKS: "Extract tasks from these notes", "Make todos from this meeting" (params: text)
         - SEARCH: General questions, "Who is X?", "What did we say about Y?" (No params)
         
         IMPORTANT:
+        - For ADD_NOTE / DRAFT_CONTENT: If user is viewing a specific entity (see context), use that entity's type and ID.
+        - For ANALYZE_DATA: 
+            - entity_type: 'company', 'contract', 'task', 'meeting'
+            - metric: 'count', 'sum_amount' (contracts), 'urgent_tasks'
+            - time_period: 'this_month', 'last_month', 'this_year', 'all_time'
+            - filters: Use context if applicable (e.g. if viewing Company X, add {{'company': 'X'}}).
         - For dates (like "tomorrow", "next week", "in 3 days", or "25/12/2025"), calculate the exact date based on CURRENT DATE and return it in 'YYYY-MM-DD' format.
         - For MEETINGS, include the time if specified (format: 'YYYY-MM-DD HH:MM:SS'). If no time is given, assume 09:00:00.
         
@@ -120,6 +157,13 @@ class LLMService:
                 return TaskTools.create_task(**params)
             elif tool_name == 'CREATE_MEETING':
                 return MeetingTools.create_meeting(**params)
+            elif tool_name == 'ADD_NOTE':
+                return CRMTools.add_note(**params)
+            elif tool_name == 'ANALYZE_DATA':
+                return AnalyticsTools.analyze_data(**params)
+            elif tool_name == 'DRAFT_CONTENT':
+                # Pass self (LLMService instance) to the tool
+                return ContentTools.draft_content(llm_service=self, **params)
             elif tool_name == 'EXTRACT_TASKS':
                 # For extraction, we might need the full text if the user said "from these notes: [TEXT]"
                 # Or if they refer to previous context, but here we assume the text is in the prompt for now.

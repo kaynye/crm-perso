@@ -13,6 +13,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
     const [newTaskTitle, setNewTaskTitle] = useState('');
+    const [newTaskPriority, setNewTaskPriority] = useState('medium');
 
     useEffect(() => {
         fetchTasks();
@@ -35,10 +36,12 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
                 await api.post('/tasks/', {
                     title: newTaskTitle,
                     status: 'todo',
+                    priority: newTaskPriority,
                     ...filter
                 });
                 fetchTasks();
                 setNewTaskTitle('');
+                setNewTaskPriority('medium');
                 setIsNewTaskModalOpen(false);
             } catch (error) {
                 console.error("Failed to create task", error);
@@ -109,7 +112,12 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
                         onClick={() => setSelectedTaskId(task.id)}
                         className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 cursor-move hover:shadow-md transition-all duration-200 relative group"
                     >
-                        <p className="font-medium text-gray-900 text-sm mb-1">{task.title}</p>
+                        <div className="flex justify-between items-start mb-1">
+                            <p className="font-medium text-gray-900 text-sm">{task.title}</p>
+                            {task.priority === 'high' && (
+                                <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 mt-1.5" title="Priorité Haute" />
+                            )}
+                        </div>
 
                         <div className="flex flex-wrap gap-2 mt-2">
                             {task.assigned_to_name && (
@@ -184,6 +192,26 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
                                 value={newTaskTitle}
                                 onChange={(e) => setNewTaskTitle(e.target.value)}
                             />
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Priorité</label>
+                                <div className="flex gap-2">
+                                    {['low', 'medium', 'high'].map((p) => (
+                                        <button
+                                            key={p}
+                                            type="button"
+                                            onClick={() => setNewTaskPriority(p)}
+                                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${newTaskPriority === p
+                                                    ? p === 'high' ? 'bg-red-100 text-red-800 border-red-200'
+                                                        : p === 'medium' ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                                            : 'bg-green-100 text-green-800 border-green-200'
+                                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {p === 'low' ? 'Basse' : p === 'medium' ? 'Moyenne' : 'Haute'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <div className="flex justify-end space-x-2">
                                 <button
                                     type="button"

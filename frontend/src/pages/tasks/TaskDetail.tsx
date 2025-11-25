@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../../api/axios';
 import Editor from '../../components/Editor';
 import { X, Calendar, User, Tag, CheckCircle } from 'lucide-react';
+import clsx from 'clsx';
 
 import type { OutputData } from '@editorjs/editorjs';
 
@@ -112,6 +113,27 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
                             <option value="todo">À faire</option>
                             <option value="in_progress">En cours</option>
                             <option value="done">Terminé</option>
+                        </select>
+                    </div>
+
+                    {/* Priority */}
+                    <div className="flex items-center">
+                        <div className="w-32 flex items-center text-gray-500 text-sm">
+                            <Tag size={16} className="mr-2" /> Priorité
+                        </div>
+                        <select
+                            className={clsx(
+                                "bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 -ml-2",
+                                task.priority === 'high' ? "text-red-600" :
+                                    task.priority === 'medium' ? "text-yellow-600" :
+                                        "text-green-600"
+                            )}
+                            value={task.priority || 'medium'}
+                            onChange={(e) => handleSaveField('priority', e.target.value)}
+                        >
+                            <option value="low">Basse</option>
+                            <option value="medium">Moyenne</option>
+                            <option value="high">Haute</option>
                         </select>
                     </div>
 

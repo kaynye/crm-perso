@@ -13,6 +13,10 @@ class TaskTools:
         if assigned_to_username:
             assigned_to = User.objects.filter(username__icontains=assigned_to_username).first()
             
+        # Sanitize due_date
+        if due_date == "":
+            due_date = None
+            
         task = Task.objects.create(
             title=title,
             description=description,

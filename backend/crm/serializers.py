@@ -7,11 +7,15 @@ class ContactSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ContractSerializer(serializers.ModelSerializer):
+    company_name = serializers.ReadOnlyField(source='company.name')
+    
     class Meta:
         model = Contract
         fields = '__all__'
 
 class MeetingSerializer(serializers.ModelSerializer):
+    company_name = serializers.ReadOnlyField(source='company.name')
+    
     class Meta:
         model = Meeting
         fields = '__all__'

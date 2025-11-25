@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, Loader2, X, ExternalLink } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 
 interface Message {
@@ -19,6 +19,7 @@ interface ChatInterfaceProps {
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [messages, setMessages] = useState<Message[]>([
         { role: 'assistant', content: 'Bonjour ! Je suis votre assistant IA. Comment puis-je vous aider avec vos données CRM ou vos tâches ?' }
     ]);
@@ -47,7 +48,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
             // Actually, let's send the history.
             const apiMessages = [...messages, userMessage].filter(m => m.role !== 'system'); // Filter out system if any (frontend doesn't usually have system)
 
-            const response = await api.post('/ai/chat/', { messages: apiMessages });
+            const response = await api.post('/ai/chat/', {
+                messages: apiMessages,
+                context: {
+                    path: location.pathname
+                }
+            });
 
             const assistantMessage: Message = {
                 role: 'assistant',
@@ -88,7 +94,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                             {msg.action && msg.action.type === 'NAVIGATE' && (
                                 <button
                                     onClick={() => {
-                                        navigate(msg.action!.url);
+                                        const currentPath = location.pathname.replace(/\/$/, '');
+                                        const targetPath = msg.action!.url.replace(/\/$/, '');
+
+                                        if (currentPath === targetPath) {
+                                            window.location.reload();
+                                        } else {
+                                            navigate(msg.action!.url);
+                                        }
                                         onClose();
                                     }}
                                     className="mt-3 flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-md text-xs font-medium hover:bg-indigo-100 transition-colors"

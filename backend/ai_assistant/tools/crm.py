@@ -80,3 +80,38 @@ class CRMTools:
         contract.status = status
         contract.save()
         return f"Contract '{contract.title}' status updated to '{status}'."
+
+    @staticmethod
+    def add_note(entity_type, entity_id, note_content):
+        """Appends a note to an entity."""
+        entity = None
+        if entity_type == 'company':
+            entity = Company.objects.filter(id=entity_id).first()
+        elif entity_type == 'contact':
+            entity = Contact.objects.filter(id=entity_id).first()
+        elif entity_type == 'contract':
+            entity = Contract.objects.filter(id=entity_id).first()
+        elif entity_type == 'meeting':
+            entity = Meeting.objects.filter(id=entity_id).first()
+            
+        if not entity:
+            return f"Error: {entity_type} with ID {entity_id} not found."
+            
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+        new_note = f"\n\n[{timestamp}] {note_content}"
+        
+        if entity.notes:
+            entity.notes += new_note
+        else:
+            entity.notes = f"[{timestamp}] {note_content}"
+            
+        entity.save()
+        
+        return {
+            "message": "Note added successfully.",
+            "action": {
+                "type": "NAVIGATE",
+                "label": f"View {entity_type.capitalize()}",
+                "url": f"/crm/{entity_type if entity_type != 'company' else 'companies'}/{entity_id}" if entity_type != 'contract' else f"/crm/contracts/{entity_id}"
+            }
+        }
