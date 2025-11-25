@@ -66,7 +66,7 @@ const ContactList: React.FC = () => {
                 </button>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
                 <table className="min-w-full divide-y divide-gray-100">
                     <thead className="bg-gray-50/50">
                         <tr>
