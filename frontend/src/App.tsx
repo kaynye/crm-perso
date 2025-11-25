@@ -16,6 +16,7 @@ import TaskBoard from './pages/tasks/TaskBoard';
 
 import DatabaseView from './components/database/DatabaseView';
 import Home from './pages/Home';
+import Profile from './pages/Profile';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -53,6 +54,7 @@ const AppRoutes: React.FC = () => {
         <Route path="crm/meetings/:id/edit" element={<MeetingForm />} />
         <Route path="tasks" element={<TaskBoard />} />
         <Route path="databases/:id" element={<DatabaseView />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
     </Routes>
   );

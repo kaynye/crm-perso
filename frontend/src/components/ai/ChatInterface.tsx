@@ -1,10 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, Loader2, X } from 'lucide-react';
+import { Send, Bot, Loader2, X, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
 interface Message {
     role: 'user' | 'assistant' | 'system';
     content: string;
+    action?: {
+        type: string;
+        label: string;
+        url: string;
+    };
 }
 
 interface ChatInterfaceProps {
@@ -12,6 +18,7 @@ interface ChatInterfaceProps {
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
+    const navigate = useNavigate();
     const [messages, setMessages] = useState<Message[]>([
         { role: 'assistant', content: 'Bonjour ! Je suis votre assistant IA. Comment puis-je vous aider avec vos données CRM ou vos tâches ?' }
     ]);
@@ -44,7 +51,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
 
             const assistantMessage: Message = {
                 role: 'assistant',
-                content: response.data.content
+                content: response.data.content,
+                action: response.data.action
             };
             setMessages(prev => [...prev, assistantMessage]);
         } catch (error) {
@@ -77,6 +85,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                             : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none shadow-sm'
                             }`}>
                             <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                            {msg.action && msg.action.type === 'NAVIGATE' && (
+                                <button
+                                    onClick={() => {
+                                        navigate(msg.action!.url);
+                                        onClose();
+                                    }}
+                                    className="mt-3 flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-md text-xs font-medium hover:bg-indigo-100 transition-colors"
+                                >
+                                    <ExternalLink size={12} />
+                                    {msg.action.label}
+                                </button>
+                            )}
                         </div>
                     </div>
                 ))}

@@ -22,28 +22,27 @@ const Home: React.FC = () => {
         fetchDashboard();
     }, []);
 
-    if (loading) return <div className="p-8">Loading...</div>;
+    if (loading) return <div className="p-8">Chargement...</div>;
 
     const getGreeting = () => {
         const hour = new Date().getHours();
-        if (hour < 12) return 'Good morning';
-        if (hour < 18) return 'Good afternoon';
-        return 'Good evening';
+        if (hour < 18) return 'Bonjour';
+        return 'Bonsoir';
     };
 
     return (
         <div className="p-8 max-w-5xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">{getGreeting()}, User</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-8">{getGreeting()}, Utilisateur</h1>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Recent Pages */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div className="flex items-center mb-4">
                         <Clock className="w-5 h-5 text-indigo-500 mr-2" />
-                        <h2 className="text-lg font-semibold text-gray-800">Recent Pages</h2>
+                        <h2 className="text-lg font-semibold text-gray-800">Pages récentes</h2>
                     </div>
                     <div className="space-y-3">
-                        {data?.recent_pages.map((page: any) => (
+                        {data?.recent_pages?.map((page: any) => (
                             <div
                                 key={page.id}
                                 onClick={() => navigate(`/pages/${page.id}`)}
@@ -56,8 +55,8 @@ const Home: React.FC = () => {
                                 </span>
                             </div>
                         ))}
-                        {data?.recent_pages.length === 0 && (
-                            <p className="text-sm text-gray-500">No pages yet.</p>
+                        {(!data?.recent_pages || data.recent_pages.length === 0) && (
+                            <p className="text-sm text-gray-500">Aucune page récente.</p>
                         )}
                     </div>
                 </div>
@@ -66,10 +65,10 @@ const Home: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div className="flex items-center mb-4">
                         <CheckSquare className="w-5 h-5 text-green-500 mr-2" />
-                        <h2 className="text-lg font-semibold text-gray-800">My Tasks</h2>
+                        <h2 className="text-lg font-semibold text-gray-800">Mes tâches</h2>
                     </div>
                     <div className="space-y-3">
-                        {data?.my_tasks.map((task: any) => (
+                        {data?.my_tasks?.map((task: any) => (
                             <div
                                 key={task.id}
                                 className="flex items-center p-2 hover:bg-gray-50 rounded border-l-2 border-transparent hover:border-green-500 transition-all"
@@ -79,15 +78,15 @@ const Home: React.FC = () => {
                                     }`} />
                                 <div className="flex-1">
                                     <div className="text-sm text-gray-800 font-medium">{task.title}</div>
-                                    <div className="text-xs text-gray-500">Due: {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date'}</div>
+                                    <div className="text-xs text-gray-500">Échéance : {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}</div>
                                 </div>
                                 <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded text-gray-600 uppercase">
                                     {task.status}
                                 </span>
                             </div>
                         ))}
-                        {data?.my_tasks.length === 0 && (
-                            <p className="text-sm text-gray-500">No pending tasks.</p>
+                        {(!data?.my_tasks || data.my_tasks.length === 0) && (
+                            <p className="text-sm text-gray-500">Aucune tâche en attente.</p>
                         )}
                     </div>
                 </div>
@@ -96,7 +95,7 @@ const Home: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div className="flex items-center mb-4">
                         <FileText className="w-5 h-5 text-blue-500 mr-2" />
-                        <h2 className="text-lg font-semibold text-gray-800">Active Contracts</h2>
+                        <h2 className="text-lg font-semibold text-gray-800">Contrats actifs</h2>
                     </div>
                     <div className="space-y-3">
                         {data?.active_contracts?.map((contract: any) => (
@@ -111,16 +110,16 @@ const Home: React.FC = () => {
                                 </div>
                                 <div className="text-right">
                                     <div className="text-sm font-medium text-gray-900">
-                                        {contract.amount ? `$${Number(contract.amount).toLocaleString()}` : '-'}
+                                        {contract.amount ? `${Number(contract.amount).toLocaleString()} €` : '-'}
                                     </div>
                                     <div className="text-xs text-gray-500">
-                                        Ends: {contract.end_date ? new Date(contract.end_date).toLocaleDateString() : 'N/A'}
+                                        Fin : {contract.end_date ? new Date(contract.end_date).toLocaleDateString() : '-'}
                                     </div>
                                 </div>
                             </div>
                         ))}
                         {(!data?.active_contracts || data.active_contracts.length === 0) && (
-                            <p className="text-sm text-gray-500">No active contracts.</p>
+                            <p className="text-sm text-gray-500">Aucun contrat actif.</p>
                         )}
                     </div>
                 </div>

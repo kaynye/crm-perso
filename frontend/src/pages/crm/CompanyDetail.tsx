@@ -129,17 +129,17 @@ const CompanyDetail: React.FC = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-sm text-gray-500">Taille</label>
-                                            <p className="text-gray-900 mt-1">{company.size || 'N/A'}</p>
+                                            <p className="text-gray-900 mt-1">{company.size || ''}</p>
                                         </div>
                                         <div>
                                             <label className="text-sm text-gray-500">Secteur</label>
-                                            <p className="text-gray-900 mt-1">{company.industry || 'N/A'}</p>
+                                            <p className="text-gray-900 mt-1">{company.industry || ''}</p>
                                         </div>
                                         <div className="col-span-2">
                                             <label className="text-sm text-gray-500">Adresse</label>
                                             <p className="text-gray-900 flex items-center gap-2 mt-1">
                                                 <MapPin size={16} className="text-gray-400" />
-                                                {company.address || 'N/A'}
+                                                {company.address || ''}
                                             </p>
                                         </div>
                                         <div className="col-span-2">

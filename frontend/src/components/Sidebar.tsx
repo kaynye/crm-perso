@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronRight, ChevronDown, FileText, Plus, Database as DatabaseIcon } from 'lucide-react';
+import { ChevronRight, ChevronDown, FileText, Plus, Database as DatabaseIcon, LayoutDashboard, User, LogOut } from 'lucide-react';
 import api from '../api/axios';
 import clsx from 'clsx';
 import ActionsMenu from './ActionsMenu';
+import { useAuth } from '../context/AuthContext';
 
 interface PageNode {
     id: string;
@@ -145,6 +146,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [isDragOver, setIsDragOver] = useState(false);
+    const { logout } = useAuth();
 
     const fetchPages = async () => {
         try {
@@ -234,7 +236,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 <div className="p-4 border-b border-zinc-800 flex justify-between items-center">
                     <span className="font-bold text-white tracking-tight text-lg">Nexus</span>
                 </div>
-                <div className="p-2 space-y-6">
+                <div className="p-2 space-y-6 flex-1 overflow-y-auto sidebar-scroll">
+                    {/* Dashboard Link */}
+                    <div onClick={() => navigate('/')} className={clsx(
+                        "flex items-center px-2 py-1.5 text-sm text-gray-300 hover:bg-zinc-800 hover:text-white cursor-pointer rounded-md transition-colors",
+                        location.pathname === '/' && "bg-zinc-800 font-medium text-white"
+                    )}>
+                        <LayoutDashboard size={16} className="mr-2 text-indigo-400" />
+                        <span className="truncate">Tableau de bord</span>
+                    </div>
+
                     <div>
                         <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">CRM</div>
                         <div className="space-y-0.5">
@@ -254,43 +265,69 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             </div>
                         </div>
                     </div>
-                </div>
-                <div
-                    className={clsx(
-                        "px-4 pt-4 pb-2 border-t border-zinc-800 flex justify-between items-center mt-auto transition-colors",
-                        isDragOver && "bg-zinc-800/50 ring-2 ring-indigo-500/50"
-                    )}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                >
-                    <span className="font-semibold text-gray-300 text-sm">Pages {isDragOver && "(Déposer pour désimbriquer)"}</span>
-                    <div className="flex space-x-1">
-                        <button onClick={createPage} className="p-1 hover:bg-zinc-800 rounded text-gray-500 hover:text-white transition-colors" title="Nouvelle Page">
-                            <Plus size={16} />
-                        </button>
-                        <button onClick={createDatabase} className="p-1 hover:bg-zinc-800 rounded text-gray-500 hover:text-white transition-colors" title="Nouvelle Base de données">
-                            <DatabaseIcon size={16} />
-                        </button>
+
+                    {/* Pages Section */}
+                    <div>
+                        <div
+                            className={clsx(
+                                "px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 flex justify-between items-center transition-colors",
+                                isDragOver && "bg-zinc-800/50 ring-2 ring-indigo-500/50 rounded"
+                            )}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                        >
+                            <span>Pages {isDragOver && "(Déposer)"}</span>
+                            <div className="flex space-x-1">
+                                <button onClick={createPage} className="p-1 hover:bg-zinc-800 rounded text-gray-500 hover:text-white transition-colors" title="Nouvelle Page">
+                                    <Plus size={14} />
+                                </button>
+                                <button onClick={createDatabase} className="p-1 hover:bg-zinc-800 rounded text-gray-500 hover:text-white transition-colors" title="Nouvelle Base de données">
+                                    <DatabaseIcon size={14} />
+                                </button>
+                            </div>
+                        </div>
+                        <div
+                            className={clsx(
+                                "space-y-0.5 transition-colors min-h-[50px]",
+                                isDragOver && "bg-zinc-800/50 rounded"
+                            )}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                        >
+                            {pages.map((page) => (
+                                <SidebarItem key={page.id} node={page} onRefresh={fetchPages} />
+                            ))}
+                            {pages.length === 0 && (
+                                <div className="px-2 py-4 text-center text-xs text-gray-600 border border-dashed border-zinc-800 rounded-lg">
+                                    Aucune page.
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-                <div
-                    className={clsx(
-                        "flex-1 overflow-y-auto py-2 sidebar-scroll transition-colors",
-                        isDragOver && "bg-zinc-800/50"
-                    )}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                >
-                    {pages.map((page) => (
-                        <SidebarItem key={page.id} node={page} onRefresh={fetchPages} />
-                    ))}
-                    {pages.length === 0 && (
-                        <div className="px-4 py-8 text-center text-sm text-gray-500 border-2 border-dashed border-zinc-800 rounded-lg m-2">
-                            Aucune page. Créez-en une ou glissez-déposez ici.
+
+                {/* User Section */}
+                <div className="p-4 border-t border-zinc-800 bg-zinc-900">
+                    <div className="flex items-center justify-between">
+                        <div
+                            onClick={() => navigate('/profile')}
+                            className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
+                                <User size={16} />
+                            </div>
+                            <div className="text-sm font-medium text-gray-200">Mon Profil</div>
                         </div>
-                    )}
+                        <button
+                            onClick={logout}
+                            className="p-2 text-gray-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
+                            title="Déconnexion"
+                        >
+                            <LogOut size={18} />
+                        </button>
+                    </div>
                 </div>
             </div>
         </>
