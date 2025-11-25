@@ -11,7 +11,7 @@ class MeetingTools:
         # Find company
         company = Company.objects.filter(name__icontains=company_name).first()
         if not company:
-            return f"Company '{company_name}' not found. Please create it first."
+            return f"Entreprise '{company_name}' introuvable. Veuillez d'abord la créer."
 
         # Parse date if string
         if isinstance(date, str):
@@ -30,7 +30,7 @@ class MeetingTools:
                     try:
                         meeting_date = datetime.strptime(date, '%Y-%m-%d')
                     except:
-                        return f"Invalid date format: {date}. Please use YYYY-MM-DD HH:MM:SS"
+                        return f"Format de date invalide : {date}. Veuillez utiliser AAAA-MM-JJ HH:MM:SS"
 
         meeting = Meeting.objects.create(
             title=title,
@@ -41,10 +41,10 @@ class MeetingTools:
         )
 
         return {
-            "message": f"Meeting '{title}' scheduled with {company.name} on {meeting_date}.",
+            "message": f"Réunion '{title}' planifiée avec {company.name} le {meeting_date}.",
             "action": {
                 "type": "NAVIGATE",
-                "label": "View Meeting",
+                "label": "Voir la réunion",
                 "url": f"/crm/meetings/{meeting.id}"
             }
         }

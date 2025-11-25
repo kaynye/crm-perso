@@ -16,15 +16,15 @@ class CRMTools:
         )
         if created:
             return {
-                "message": f"Company '{name}' created successfully.",
+                "message": f"Entreprise '{name}' créée avec succès.",
                 "action": {
                     "type": "NAVIGATE",
-                    "label": f"View {name}",
+                    "label": f"Voir {name}",
                     "url": f"/crm/companies/{company.id}"
                 }
             }
         else:
-            return f"Company '{name}' already exists."
+            return f"L'entreprise '{name}' existe déjà."
 
     @staticmethod
     def create_contact(first_name, last_name, company_name="", email="", position=""):
@@ -41,11 +41,11 @@ class CRMTools:
             position=position
         )
         
-        msg = f"Contact '{first_name} {last_name}' created."
+        msg = f"Contact '{first_name} {last_name}' créé."
         if company:
-            msg += f" Linked to company '{company.name}'."
+            msg += f" Lié à l'entreprise '{company.name}'."
         else:
-            msg += " No company linked."
+            msg += " Aucune entreprise liée."
         return msg
 
     @staticmethod
@@ -53,7 +53,7 @@ class CRMTools:
         """Creates a new contract linked to a company."""
         company = Company.objects.filter(name__icontains=company_name).first()
         if not company:
-            return f"Error: Company '{company_name}' not found. Please create the company first."
+            return f"Erreur : Entreprise '{company_name}' introuvable. Veuillez d'abord créer l'entreprise."
             
         contract = Contract.objects.create(
             title=title,
@@ -62,10 +62,10 @@ class CRMTools:
             status=status
         )
         return {
-            "message": f"Contract '{title}' created for {company_name}.",
+            "message": f"Contrat '{title}' créé pour {company_name}.",
             "action": {
                 "type": "NAVIGATE",
-                "label": f"View Contract",
+                "label": f"Voir le contrat",
                 "url": f"/crm/contracts/{contract.id}"
             }
         }
@@ -75,11 +75,11 @@ class CRMTools:
         """Updates the status of a contract."""
         contract = Contract.objects.filter(title__icontains=title).first()
         if not contract:
-            return f"Error: Contract '{title}' not found."
+            return f"Erreur : Contrat '{title}' introuvable."
             
         contract.status = status
         contract.save()
-        return f"Contract '{contract.title}' status updated to '{status}'."
+        return f"Statut du contrat '{contract.title}' mis à jour vers '{status}'."
 
     @staticmethod
     def add_note(entity_type, entity_id, note_content):
@@ -95,7 +95,7 @@ class CRMTools:
             entity = Meeting.objects.filter(id=entity_id).first()
             
         if not entity:
-            return f"Error: {entity_type} with ID {entity_id} not found."
+            return f"Erreur : {entity_type} avec l'ID {entity_id} introuvable."
             
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
         new_note = f"\n\n[{timestamp}] {note_content}"
@@ -108,10 +108,10 @@ class CRMTools:
         entity.save()
         
         return {
-            "message": "Note added successfully.",
+            "message": "Note ajoutée avec succès.",
             "action": {
                 "type": "NAVIGATE",
-                "label": f"View {entity_type.capitalize()}",
+                "label": f"Voir {entity_type.capitalize()}",
                 "url": f"/crm/{entity_type if entity_type != 'company' else 'companies'}/{entity_id}" if entity_type != 'contract' else f"/crm/contracts/{entity_id}"
             }
         }

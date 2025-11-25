@@ -26,10 +26,10 @@ class TaskTools:
             assigned_to=assigned_to
         )
         return {
-            "message": f"Task '{title}' created successfully.",
+            "message": f"Tâche '{title}' créée avec succès.",
             "action": {
                 "type": "NAVIGATE",
-                "label": "View Tasks",
+                "label": "Voir les tâches",
                 "url": "/tasks"
             }
         }
@@ -74,6 +74,6 @@ class TaskTools:
                         status=t.get('status', 'todo')
                     )
                     created_count += 1
-            return f"Successfully extracted and created {created_count} tasks."
+            return f"Extraction réussie : {created_count} tâches créées."
         except json.JSONDecodeError:
-            return f"Failed to parse tasks from AI response. Raw output: {response_text[:100]}..."
+            return f"Échec de l'analyse des tâches depuis la réponse IA. Sortie brute : {response_text[:100]}..."

@@ -208,6 +208,7 @@ class LLMService:
                - Ask the user to clarify which specific item they are referring to.
             3. If the answer is not in the context, use your general knowledge but mention that you couldn't find specific records.
             4. Be concise and helpful.
+            5. ALWAYS ANSWER IN FRENCH.
             """
 
         # Prepend system prompt

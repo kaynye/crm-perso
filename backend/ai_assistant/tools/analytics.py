@@ -65,11 +65,11 @@ class AnalyticsTools:
         # Calculate Metric
         if metric == 'count':
             count = queryset.count()
-            return f"Total {entity_type}s ({time_period or 'all time'}): {count}"
+            return f"Total {entity_type}s ({time_period or 'tout le temps'}): {count}"
         
         elif metric == 'sum_amount' and entity_type == 'contract':
             total = queryset.aggregate(Sum('amount'))['amount__sum'] or 0
-            return f"Total amount of contracts ({time_period or 'all time'}): {total} €"
+            return f"Montant total des contrats ({time_period or 'tout le temps'}): {total} €"
             
         elif metric == 'urgent_tasks' and entity_type == 'task':
             # Special metric for "urgent tasks"
@@ -77,9 +77,9 @@ class AnalyticsTools:
             count = tasks.count()
             
             if count == 0:
-                return "You have no urgent tasks."
+                return "Vous n'avez aucune tâche urgente."
                 
-            task_list = "\n".join([f"- {t.title} (Due: {t.due_date.strftime('%Y-%m-%d') if t.due_date else 'No date'})" for t in tasks])
-            return f"You have {count} urgent tasks:\n{task_list}"
+            task_list = "\n".join([f"- {t.title} (Échéance : {t.due_date.strftime('%d/%m/%Y') if t.due_date else 'Aucune'})" for t in tasks])
+            return f"Vous avez {count} tâches urgentes :\n{task_list}"
 
-        return f"Analysis completed. Count: {queryset.count()}"
+        return f"Analyse terminée. Résultat : {queryset.count()}"
