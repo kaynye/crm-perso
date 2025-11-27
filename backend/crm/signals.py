@@ -5,11 +5,41 @@ from pages.models import Page
 
 @receiver(post_save, sender=Company)
 def create_company_wiki_page(sender, instance, created, **kwargs):
-    if created:
-        # Create a Wiki page for the new company
         Page.objects.create(
             title=instance.name,
             page_type='wiki',
             company=instance,
             content=f'{{"blocks": [{{"type": "header", "data": {{"text": "{instance.name} Wiki", "level": 1}}}}]}}'
         )
+
+from .models import Contract
+import os
+from pypdf import PdfReader
+
+@receiver(post_save, sender=Contract)
+def extract_contract_text(sender, instance, created, **kwargs):
+    """
+    Extracts text from the uploaded PDF file and saves it to extracted_text.
+    """
+    if instance.file and not instance.extracted_text:
+        try:
+            file_path = instance.file.path
+            if not os.path.exists(file_path):
+                return
+
+            # Only process PDFs
+            if not file_path.lower().endswith('.pdf'):
+                return
+
+            reader = PdfReader(file_path)
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text() + "\n"
+            
+            # Save extracted text without triggering signals again
+            instance.extracted_text = text
+            instance.save(update_fields=['extracted_text'])
+            print(f"Successfully extracted text from {instance.title}")
+            
+        except Exception as e:
+            print(f"Error extracting text from contract {instance.id}: {str(e)}")

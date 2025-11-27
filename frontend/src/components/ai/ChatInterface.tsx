@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, Loader2, X, ExternalLink } from 'lucide-react';
+import { Send, Loader2, X, ExternalLink, Mic, Square } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 
@@ -34,6 +34,62 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    const [isListening, setIsListening] = useState(false);
+    const [speechError, setSpeechError] = useState<string | null>(null);
+    const recognitionRef = useRef<any>(null);
+
+    const toggleListening = () => {
+        if (isListening) {
+            recognitionRef.current?.stop();
+            setIsListening(false);
+            return;
+        }
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+            recognitionRef.current = new SpeechRecognition();
+            recognitionRef.current.continuous = false;
+            recognitionRef.current.interimResults = true;
+            recognitionRef.current.lang = 'fr-FR';
+
+            recognitionRef.current.onstart = () => {
+                setIsListening(true);
+                setSpeechError(null);
+            };
+
+            recognitionRef.current.onresult = (event: any) => {
+                let finalTranscript = '';
+                for (let i = 0; i < event.results.length; i++) {
+                    finalTranscript += event.results[i][0].transcript;
+                }
+                // Simple append for testing
+                setInput(prev => {
+                    // Avoid duplicating if it's the same update
+                    if (prev.endsWith(finalTranscript)) return prev;
+                    // This is a bit hacky for interim, but let's see if we get ANY text
+                    return finalTranscript;
+                });
+                // Actually, for interim results, we should just show the transcript.
+                // Let's try just setting the input to the transcript for now to verify it works.
+                setInput(finalTranscript);
+            };
+
+            recognitionRef.current.onerror = (event: any) => {
+                console.error("Speech recognition error", event.error);
+                setSpeechError(event.error);
+                setIsListening(false);
+            };
+
+            recognitionRef.current.onend = () => {
+                setIsListening(false);
+            };
+
+            recognitionRef.current.start();
+        } else {
+            alert("Votre navigateur ne supporte pas la reconnaissance vocale.");
+        }
+    };
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
@@ -74,8 +130,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
             {/* Header */}
             <div className="bg-indigo-600 p-4 flex justify-between items-center text-white">
                 <div className="flex items-center gap-2">
-                    <Bot size={20} />
-                    <h3 className="font-semibold">Assistant IA</h3>
+                    <h3 className="font-semibold">Assistant</h3>
                 </div>
                 <button onClick={onClose} className="hover:bg-indigo-700 p-1 rounded">
                     <X size={18} />
@@ -84,6 +139,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                {speechError && (
+                    <div className="bg-red-50 text-red-600 p-2 rounded text-xs text-center">
+                        Erreur micro : {speechError}
+                    </div>
+                )}
                 {messages.map((msg, index) => (
                     <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] rounded-lg p-3 ${msg.role === 'user'
@@ -135,6 +195,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                         className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         disabled={isLoading}
                     />
+                    <button
+                        onClick={toggleListening}
+                        className={`p-2 rounded-md transition-colors ${isListening ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        title={isListening ? "Arrêter" : "Dicter"}
+                    >
+                        {isListening ? <Square size={18} fill="currentColor" /> : <Mic size={18} />}
+                    </button>
                     <button
                         onClick={handleSend}
                         disabled={isLoading || !input.trim()}

@@ -14,6 +14,7 @@ from .tools.tasks import TaskTools
 from .tools.meetings import MeetingTools
 from .tools.analytics import AnalyticsTools
 from .tools.content import ContentTools
+from .tools.email_tools import EmailTools
 
 class LLMService:
     def __init__(self):
@@ -42,14 +43,18 @@ class LLMService:
         """
         last_user_msg = next((m['content'] for m in reversed(messages) if m['role'] == 'user'), "")
         
-        # 1. Intent Detection
-        intent = self._detect_intent(last_user_msg, page_context)
+        # 1. Retrieve Context (RAG) - ALWAYS run this to give the agent knowledge
+        search_terms = self.extract_entities(last_user_msg)
+        rag_context = RAGService.get_context(search_terms)
+        
+        # 2. Intent Detection (with Context)
+        intent = self._detect_intent(last_user_msg, page_context, rag_context)
         print(f"DEBUG: Detected Intent: {intent}")
         
         tool_name = intent.get('tool')
         params = intent.get('params', {})
         
-        # 2. Execute Tool if applicable
+        # 3. Execute Tool if applicable
         if tool_name and tool_name != 'SEARCH':
             result = self._execute_tool(tool_name, params, last_user_msg)
             # If result is a dict (structured action), return it
@@ -58,11 +63,10 @@ class LLMService:
             # If string, wrap it
             return {"content": str(result)}
             
-        # 3. Fallback to RAG Search (Default)
-        response_text = self._run_rag_search(messages, last_user_msg)
-        return {"content": response_text}
+        # 4. Fallback to Chat (using the already fetched context)
+        return {"content": self.chat(messages, rag_context)}
 
-    def _detect_intent(self, query, page_context=None):
+    def _detect_intent(self, query, page_context=None, rag_context=""):
         """
         Asks LLM to classify the query and extract parameters.
         """
@@ -93,13 +97,18 @@ class LLMService:
         system_prompt = f"""
         You are an AI Orchestrator. Analyze the user's request and map it to one of the available tools.
         
+        PAGE CONTEXT:
         {context_str}
+        
+        DATABASE CONTEXT (RAG):
+        {rag_context}
         
         CURRENT DATE: {datetime.now().strftime('%Y-%m-%d')}
         
         AVAILABLE TOOLS:
         - CREATE_COMPANY: "Create company Acme", "Add new client Domos" (params: name, industry, size)
         - CREATE_CONTACT: "Add contact John Doe to Acme" (params: first_name, last_name, company_name, email, position)
+        - CREATE_CONTACT: "Add contact John Doe to Acme to Acme" (params: first_name, last_name, company_name, email, position)
         - CREATE_CONTRACT: "New contract for Acme", "Draft contract video promotion" (params: title, company_name, amount, status)
         - UPDATE_CONTRACT: "Mark contract X as signed" (params: title, status)
         - CREATE_TASK: "Remind me to call John tomorrow", "New task: Buy milk" (params: title, description, due_date)
@@ -107,6 +116,7 @@ class LLMService:
         - ADD_NOTE: "Add note 'Called him today'", "Note: Client is happy" (params: note_content, entity_type, entity_id)
         - ANALYZE_DATA: "Total contracts signed this month", "How many urgent tasks?" (params: entity_type, metric, time_period, filters)
         - DRAFT_CONTENT: "Draft email to TechNova about contract", "Write follow-up for meeting" (params: entity_type, entity_id, instruction)
+        - SEND_EMAIL: "Send email to client@example.com", "Envoyer l'email" (params: to_email, subject, body)
         - EXTRACT_TASKS: "Extract tasks from these notes", "Make todos from this meeting" (params: text)
         - SEARCH: General questions, "Who is X?", "What did we say about Y?" (No params)
         
@@ -164,6 +174,8 @@ class LLMService:
             elif tool_name == 'DRAFT_CONTENT':
                 # Pass self (LLMService instance) to the tool
                 return ContentTools.draft_content(llm_service=self, **params)
+            elif tool_name == 'SEND_EMAIL':
+                return EmailTools.send_email(**params)
             elif tool_name == 'EXTRACT_TASKS':
                 # For extraction, we might need the full text if the user said "from these notes: [TEXT]"
                 # Or if they refer to previous context, but here we assume the text is in the prompt for now.

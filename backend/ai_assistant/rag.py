@@ -66,13 +66,18 @@ class RAGService:
 
             # 2. Search Contracts
             from crm.models import Contract, Meeting
-            contracts = Contract.objects.filter(title__icontains=query)[:3]
+            contracts = Contract.objects.filter(
+                Q(title__icontains=query) | Q(extracted_text__icontains=query)
+            )[:3]
             for contract in contracts:
                 if contract.id in seen_ids: continue
                 seen_ids.add(contract.id)
                 
                 context_parts.append(f"CONTRACT: {contract.title} (Company: {contract.company.name}, Status: {contract.status})")
                 context_parts.append(f"  > Details: Amount: {contract.amount}, Start: {contract.start_date}, End: {contract.end_date}")
+                if contract.extracted_text:
+                    preview = contract.extracted_text[:2000] + "..." if len(contract.extracted_text) > 2000 else contract.extracted_text
+                    context_parts.append(f"  > EXTRACTED CONTENT: {preview}")
                 
                 meetings = contract.meetings.order_by('-date')[:3]
                 if meetings.exists():

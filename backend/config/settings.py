@@ -122,3 +122,13 @@ AI_CONF = {
     'BASE_URL': os.getenv('AI_BASE_URL', None), # For custom providers like DeepSeek/Kimi/Ollama
     'MODEL': os.getenv('AI_MODEL', 'gpt-3.5-turbo'),
 }
+
+# Email Configuration
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('GOOGLE_APP_KEY', '') # User specified this var name
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
