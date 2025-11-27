@@ -164,6 +164,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
                     Nouvelle Tâche
                 </button>
             </div>
+
             <div className="flex flex-1 overflow-x-auto pb-4 -mx-2 px-2 snap-x snap-mandatory">
                 <Column title="À faire" status="todo" items={tasks.todo || []} />
                 <Column title="En cours" status="in_progress" items={tasks.in_progress || []} />

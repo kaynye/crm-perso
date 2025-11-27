@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/axios';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Trash2 } from 'lucide-react';
 
 const CompanyForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -43,6 +43,18 @@ const CompanyForm: React.FC = () => {
             fetchCompany();
         }
     }, [id, isEditing]);
+
+    const handleDelete = async () => {
+        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette entreprise ? Cette action est irréversible et supprimera toutes les données associées (contacts, contrats, réunions).')) {
+            try {
+                await api.delete(`/crm/companies/${id}/`);
+                navigate('/crm/companies');
+            } catch (error) {
+                console.error("Failed to delete company", error);
+                alert("Échec de la suppression");
+            }
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -159,15 +171,27 @@ const CompanyForm: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="flex justify-end pt-4 border-t border-gray-100">
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 disabled:opacity-50"
-                    >
-                        <Save size={18} />
-                        {loading ? 'Enregistrement...' : 'Enregistrer'}
-                    </button>
+                <div className="flex justify-between pt-4 border-t border-gray-100">
+                    {isEditing && (
+                        <button
+                            type="button"
+                            onClick={handleDelete}
+                            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-md font-medium transition-colors"
+                        >
+                            <Trash2 size={18} />
+                            Supprimer
+                        </button>
+                    )}
+                    <div className="flex-1 flex justify-end">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                            <Save size={18} />
+                            {loading ? 'Enregistrement...' : 'Enregistrer'}
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

@@ -48,24 +48,24 @@ const CompanyDetail: React.FC = () => {
         }
     };
 
-    if (loading) return <div className="p-8">Chargement...</div>;
-    if (!company) return <div className="p-8">Entreprise introuvable</div>;
+    if (loading) return <div className="p-8 flex justify-center items-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>;
+    if (!company) return <div className="p-8 text-center text-gray-500">Entreprise introuvable</div>;
 
     return (
         <div className="flex flex-col h-full bg-gray-50">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-8 py-6">
-                <div className="flex items-start justify-between">
+            <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-6">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
-                            <Building size={32} />
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 flex-shrink-0">
+                            <Building size={24} className="md:w-8 md:h-8" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">{company.name}</h1>
-                            <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                            <h1 className="text-xl md:text-2xl font-bold text-gray-900">{company.name}</h1>
+                            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500 mt-1">
                                 {company.industry && <span>{company.industry}</span>}
                                 {company.website && (
-                                    <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                                    <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline truncate max-w-[200px]">
                                         {company.website}
                                     </a>
                                 )}
@@ -74,18 +74,18 @@ const CompanyDetail: React.FC = () => {
                     </div>
                     <button
                         onClick={() => navigate(`/crm/companies/${id}/edit`)}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
+                        className="w-full md:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
                     >
                         Modifier l'entreprise
                     </button>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-6 mt-8">
+                <div className="flex gap-6 mt-8 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
                     <button
                         onClick={() => setActiveTab('overview')}
                         className={clsx(
-                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize",
+                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
                             activeTab === 'overview' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
                         )}
                     >
@@ -94,7 +94,7 @@ const CompanyDetail: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('contracts')}
                         className={clsx(
-                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize",
+                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
                             activeTab === 'contracts' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
                         )}
                     >
@@ -106,7 +106,7 @@ const CompanyDetail: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('meetings')}
                         className={clsx(
-                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize",
+                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
                             activeTab === 'meetings' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
                         )}
                     >
@@ -119,40 +119,40 @@ const CompanyDetail: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
                 {activeTab === 'overview' && (
-                    <div className="grid grid-cols-3 gap-6">
-                        <div className="col-span-2 space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 space-y-6">
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                                 <h3 className="text-lg font-medium text-gray-900 mb-4">À propos</h3>
                                 <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-sm text-gray-500">Taille</label>
-                                            <p className="text-gray-900 mt-1">{company.size || ''}</p>
+                                            <p className="text-gray-900 mt-1">{company.size || '-'}</p>
                                         </div>
                                         <div>
                                             <label className="text-sm text-gray-500">Secteur</label>
-                                            <p className="text-gray-900 mt-1">{company.industry || ''}</p>
+                                            <p className="text-gray-900 mt-1">{company.industry || '-'}</p>
                                         </div>
-                                        <div className="col-span-2">
+                                        <div className="md:col-span-2">
                                             <label className="text-sm text-gray-500">Adresse</label>
                                             <p className="text-gray-900 flex items-center gap-2 mt-1">
-                                                <MapPin size={16} className="text-gray-400" />
-                                                {company.address || ''}
+                                                <MapPin size={16} className="text-gray-400 flex-shrink-0" />
+                                                {company.address || '-'}
                                             </p>
                                         </div>
-                                        <div className="col-span-2">
+                                        <div className="md:col-span-2">
                                             <label className="text-sm text-gray-500">Tags</label>
                                             <div className="flex flex-wrap gap-2 mt-1">
                                                 {company.tags ? company.tags.split(',').map((tag: string, i: number) => (
                                                     <span key={i} className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs">
                                                         {tag.trim()}
                                                     </span>
-                                                )) : 'Aucun tag'}
+                                                )) : <span className="text-gray-400 text-sm">Aucun tag</span>}
                                             </div>
                                         </div>
-                                        <div className="col-span-2">
+                                        <div className="md:col-span-2">
                                             <label className="text-sm text-gray-500">Notes</label>
                                             <p className="text-gray-900 mt-1 whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded-md border border-gray-100">
                                                 {company.notes || 'Aucune note'}
@@ -177,7 +177,8 @@ const CompanyDetail: React.FC = () => {
                                 className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
                             >
                                 <Plus size={16} />
-                                Nouveau Contrat
+                                <span className="hidden md:inline">Nouveau Contrat</span>
+                                <span className="md:hidden">Nouveau</span>
                             </button>
                         </div>
                         <div className="grid gap-4">
@@ -187,7 +188,7 @@ const CompanyDetail: React.FC = () => {
                                     onClick={() => navigate(`/crm/contracts/${contract.id}`)}
                                     className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:border-indigo-500 transition-colors"
                                 >
-                                    <div className="flex justify-between items-start">
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
                                         <div>
                                             <h4 className="font-medium text-gray-900">{contract.title}</h4>
                                             <p className="text-sm text-gray-500 mt-1">
@@ -224,7 +225,8 @@ const CompanyDetail: React.FC = () => {
                                 className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
                             >
                                 <Plus size={16} />
-                                Nouvelle Réunion
+                                <span className="hidden md:inline">Nouvelle Réunion</span>
+                                <span className="md:hidden">Nouvelle</span>
                             </button>
                         </div>
                         <div className="grid gap-4">
