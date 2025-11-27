@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import Editor from '../../components/Editor';
 import { X, Calendar, User, Tag, CheckCircle } from 'lucide-react';
@@ -13,6 +14,7 @@ interface TaskDetailProps {
 }
 
 const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) => {
+    const navigate = useNavigate();
     const [task, setTask] = useState<any>(null);
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -167,6 +169,21 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
                         />
                     </div>
 
+                    {/* Company (Read-only for now) */}
+                    {task.company_name && (
+                        <div className="flex items-center">
+                            <div className="w-32 flex items-center text-gray-500 text-sm">
+                                <Tag size={16} className="mr-2" /> Entreprise
+                            </div>
+                            <div
+                                className="text-sm text-indigo-600 font-medium px-2 py-1 -ml-2 cursor-pointer hover:underline"
+                                onClick={() => navigate(`/crm/companies/${task.linked_company_id}`)}
+                            >
+                                {task.company_name}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Category */}
                     <div className="flex items-center">
                         <div className="w-32 flex items-center text-gray-500 text-sm">
@@ -190,7 +207,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

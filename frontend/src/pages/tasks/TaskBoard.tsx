@@ -138,6 +138,12 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
                                     {new Date(task.due_date).toLocaleDateString('fr-FR')}
                                 </span>
                             )}
+                            {task.company_name && (
+                                <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 flex items-center">
+                                    <span className="w-1 h-1 rounded-full bg-blue-400 mr-1"></span>
+                                    {task.company_name}
+                                </span>
+                            )}
                         </div>
 
                         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
@@ -201,10 +207,10 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
                                             type="button"
                                             onClick={() => setNewTaskPriority(p)}
                                             className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${newTaskPriority === p
-                                                    ? p === 'high' ? 'bg-red-100 text-red-800 border-red-200'
-                                                        : p === 'medium' ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                                                            : 'bg-green-100 text-green-800 border-green-200'
-                                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                ? p === 'high' ? 'bg-red-100 text-red-800 border-red-200'
+                                                    : p === 'medium' ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                                        : 'bg-green-100 text-green-800 border-green-200'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                                                 }`}
                                         >
                                             {p === 'low' ? 'Basse' : p === 'medium' ? 'Moyenne' : 'Haute'}
