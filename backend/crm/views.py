@@ -28,3 +28,6 @@ class MeetingViewSet(viewsets.ModelViewSet):
     serializer_class = MeetingSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['company', 'contract', 'date']
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)

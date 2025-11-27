@@ -16,7 +16,9 @@ import TaskBoard from './pages/tasks/TaskBoard';
 
 import DatabaseView from './components/database/DatabaseView';
 import Home from './pages/Home';
+
 import Profile from './pages/Profile';
+import GoogleCallback from './pages/GoogleCallback';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -55,7 +57,13 @@ const AppRoutes: React.FC = () => {
         <Route path="tasks" element={<TaskBoard />} />
         <Route path="databases/:id" element={<DatabaseView />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
+      <Route path="/google/callback" element={
+        <ProtectedRoute>
+          <GoogleCallback />
+        </ProtectedRoute>
+      } />
     </Routes>
   );
 }

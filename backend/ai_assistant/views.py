@@ -17,7 +17,7 @@ class ChatView(APIView):
         # Call LLM Agent
         llm = LLMService()
         page_context = request.data.get('context', {})
-        agent_response = llm.run_agent(messages, page_context=page_context)
+        agent_response = llm.run_agent(messages, page_context=page_context, user=request.user)
         
         # agent_response is now a dict { "content": "...", "action": ... }
         return Response({

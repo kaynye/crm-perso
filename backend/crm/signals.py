@@ -43,3 +43,21 @@ def extract_contract_text(sender, instance, created, **kwargs):
             
         except Exception as e:
             print(f"Error extracting text from contract {instance.id}: {str(e)}")
+
+from .models import Meeting
+from integrations.services import GoogleCalendarService
+
+@receiver(post_save, sender=Meeting)
+def sync_meeting_to_google(sender, instance, created, **kwargs):
+    """
+    Syncs the meeting to Google Calendar if the user has connected their account.
+    """
+    if instance.created_by:
+        # We only sync if there's a user attached
+        # Ideally we should check if it's a new meeting or update
+        # For now, create_event handles creation. update_event logic is needed for updates.
+        # But let's start with creation.
+        if created:
+            GoogleCalendarService.create_event(instance.created_by, instance)
+        # else:
+        #     GoogleCalendarService.update_event(instance.created_by, instance)

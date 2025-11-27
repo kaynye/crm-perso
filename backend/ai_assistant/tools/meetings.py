@@ -4,7 +4,7 @@ from datetime import datetime
 
 class MeetingTools:
     @staticmethod
-    def create_meeting(title, company_name, date, type='video', notes=''):
+    def create_meeting(title, company_name, date, type='video', notes='', user=None):
         """
         Creates a new meeting for a company.
         """
@@ -37,7 +37,8 @@ class MeetingTools:
             company=company,
             date=meeting_date,
             type=type,
-            notes=notes
+            notes=notes,
+            created_by=user
         )
 
         return {

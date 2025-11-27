@@ -37,7 +37,7 @@ class LLMService:
             
         self.model = self.conf.get('MODEL', 'gpt-3.5-turbo')
 
-    def run_agent(self, messages, page_context=None):
+    def run_agent(self, messages, page_context=None, user=None):
         """
         Main entry point. Decides whether to use a Tool or perform RAG Search.
         """
@@ -56,7 +56,7 @@ class LLMService:
         
         # 3. Execute Tool if applicable
         if tool_name and tool_name != 'SEARCH':
-            result = self._execute_tool(tool_name, params, last_user_msg)
+            result = self._execute_tool(tool_name, params, last_user_msg, user)
             # If result is a dict (structured action), return it
             if isinstance(result, dict):
                 return result
@@ -94,6 +94,9 @@ class LLMService:
                  except:
                      pass
 
+        from django.utils import timezone
+        CURRENT_DATE = timezone.localtime().strftime('%Y-%m-%d %H:%M')
+        
         system_prompt = f"""
         You are an AI Orchestrator. Analyze the user's request and map it to one of the available tools.
         
@@ -103,7 +106,7 @@ class LLMService:
         DATABASE CONTEXT (RAG):
         {rag_context}
         
-        CURRENT DATE: {datetime.now().strftime('%Y-%m-%d')}
+        CURRENT DATE: {CURRENT_DATE}
         
         AVAILABLE TOOLS:
         - CREATE_COMPANY: "Create company Acme", "Add new client Domos" (params: name, industry, size)
@@ -150,7 +153,7 @@ class LLMService:
         except:
             return {"tool": "SEARCH"}
 
-    def _execute_tool(self, tool_name, params, raw_text):
+    def _execute_tool(self, tool_name, params, raw_text, user=None):
         """
         Executes the selected tool.
         """
@@ -166,7 +169,7 @@ class LLMService:
             elif tool_name == 'CREATE_TASK':
                 return TaskTools.create_task(**params)
             elif tool_name == 'CREATE_MEETING':
-                return MeetingTools.create_meeting(**params)
+                return MeetingTools.create_meeting(user=user, **params)
             elif tool_name == 'ADD_NOTE':
                 return CRMTools.add_note(**params)
             elif tool_name == 'ANALYZE_DATA':
