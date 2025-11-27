@@ -171,10 +171,82 @@ class DashboardView(APIView):
             'amount': c.amount
         } for c in active_contracts]
 
+        # Analytics - Revenue (Last 6 months)
+        from django.db.models import Sum, Count
+        from django.db.models.functions import TruncMonth
+        from django.utils import timezone
+        from datetime import timedelta
+        import locale
+        
+        # French month names mapping
+        MONTHS_FR = {
+            1: 'Janv', 2: 'Févr', 3: 'Mars', 4: 'Avr', 5: 'Mai', 6: 'Juin',
+            7: 'Juil', 8: 'Août', 9: 'Sept', 10: 'Oct', 11: 'Nov', 12: 'Déc'
+        }
+
+        six_months_ago = timezone.now() - timedelta(days=180)
+        revenue_data = Contract.objects.filter(
+            status='signed', 
+            created_at__gte=six_months_ago
+        ).annotate(
+            month=TruncMonth('created_at')
+        ).values('month').annotate(
+            total=Sum('amount')
+        ).order_by('month')
+        
+        revenue_chart = [
+            {
+                'name': MONTHS_FR[item['month'].month], 
+                'value': item['total'] or 0
+            } for item in revenue_data
+        ]
+
+        # Analytics - Task Distribution
+        task_counts = Task.objects.values('status').annotate(count=Count('id'))
+        
+        TASK_STATUS_FR = {
+            'todo': 'À faire',
+            'in_progress': 'En cours',
+            'done': 'Terminé',
+            'blocked': 'Bloqué'
+        }
+        
+        task_chart = [
+            {
+                'name': TASK_STATUS_FR.get(item['status'], item['status']), 
+                'value': item['count']
+            } for item in task_counts
+        ]
+
+        # Analytics - Sales Funnel (Contracts by status)
+        funnel_counts = Contract.objects.values('status').annotate(count=Count('id'))
+        # Order: Draft -> Active -> Signed -> Finished
+        status_order = ['draft', 'active', 'signed', 'finished']
+        
+        CONTRACT_STATUS_FR = {
+            'draft': 'Brouillon',
+            'active': 'Actif',
+            'signed': 'Signé',
+            'finished': 'Terminé'
+        }
+        
+        funnel_map = {item['status']: item['count'] for item in funnel_counts}
+        funnel_chart = [
+            {
+                'name': CONTRACT_STATUS_FR.get(status, status), 
+                'value': funnel_map.get(status, 0)
+            } for status in status_order
+        ]
+
         return Response({
             'recent_pages': recent_pages_data,
             'my_tasks': my_tasks_data,
-            'active_contracts': active_contracts_data
+            'active_contracts': active_contracts_data,
+            'analytics': {
+                'revenue': revenue_chart,
+                'tasks': task_chart,
+                'funnel': funnel_chart
+            }
         })
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
