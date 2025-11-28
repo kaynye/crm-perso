@@ -9,9 +9,14 @@ load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'cms.2kvl.tech',
+    'localhost',
+    '127.0.0.1',
+    '[::1]',
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -114,7 +119,15 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
-CORS_ALLOW_ALL_ORIGINS = True # For development
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all in debug mode
+
+if not DEBUG:
+    CORS_ALLOWED_ORIGINS = [
+        "https://cms.2kvl.tech",
+    ]
+    CSRF_TRUSTED_ORIGINS = [
+        "https://cms.2kvl.tech",
+    ]
 
 # AI Configuration
 AI_CONF = {
