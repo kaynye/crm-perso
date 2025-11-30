@@ -1,4 +1,4 @@
-import api from '../../api/axios';
+
 
 export default class MentionTool {
     static get isInline() {
@@ -16,7 +16,10 @@ export default class MentionTool {
         };
     }
 
+    private api: any;
     private config: any;
+    private button: HTMLButtonElement | null;
+    private _state: boolean;
 
     constructor({ api, config }: { api: any, config: any }) {
         this.api = api;
@@ -51,7 +54,7 @@ export default class MentionTool {
         }
     }
 
-    unwrap(range: Range) {
+    unwrap(_range: Range) {
         const termWrapper = this.api.selection.findParentTag('A', 'mention-link');
 
         if (termWrapper) {

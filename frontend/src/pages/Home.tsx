@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { Clock, CheckSquare, FileText, TrendingUp, Users, AlertCircle } from 'lucide-react';
+import { FileText, TrendingUp, AlertCircle } from 'lucide-react';
 import RevenueChart from '../components/dashboard/RevenueChart';
 import TaskDistributionChart from '../components/dashboard/TaskDistributionChart';
 import SalesFunnelChart from '../components/dashboard/SalesFunnelChart';

@@ -23,7 +23,7 @@ const SalesFunnelChart: React.FC<SalesFunnelChartProps> = ({ data }) => {
                         <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
                         <Tooltip cursor={{ fill: '#f3f4f6' }} />
                         <Bar dataKey="value" barSize={20} radius={[0, 4, 4, 0]}>
-                            {data.map((entry, index) => (
+                            {data.map((_, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Bar>

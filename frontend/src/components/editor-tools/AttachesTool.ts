@@ -8,13 +8,11 @@ export default class AttachesTool {
         };
     }
 
-    private api: any;
     private data: { url: string; name: string; size: number };
     private wrapper: HTMLElement | undefined;
 
-    constructor({ data, api }: { data: any, api: any }) {
+    constructor({ data }: { data: any, api: any }) {
         this.data = data;
-        this.api = api;
         this.wrapper = undefined;
     }
 
@@ -59,7 +57,7 @@ export default class AttachesTool {
         return this.wrapper;
     }
 
-    save(blockContent: HTMLElement) {
+    save(_blockContent: HTMLElement) {
         return this.data;
     }
 
