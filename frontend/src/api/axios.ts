@@ -25,6 +25,11 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
         if (error.response && error.response.status === 401 && !originalRequest._retry) {
+            // Don't redirect if we're already on the login page or if it's a login request
+            if (originalRequest.url?.includes('/auth/token/') && !originalRequest.url?.includes('/refresh/')) {
+                return Promise.reject(error);
+            }
+
             originalRequest._retry = true;
             const refreshToken = localStorage.getItem('refresh_token');
             if (refreshToken) {
