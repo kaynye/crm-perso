@@ -16,6 +16,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '[::1]',
+    'unsilly-dexter-unpersonifying.ngrok-free.dev',
 ]
 
 INSTALLED_APPS = [
@@ -116,7 +117,10 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 100,
 }
+
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -140,6 +144,10 @@ AI_CONF = {
     'BASE_URL': os.getenv('AI_BASE_URL', None), # For custom providers like DeepSeek/Kimi/Ollama
     'MODEL': os.getenv('AI_MODEL', 'gpt-3.5-turbo'),
 }
+
+# Gemini Integration
+GEMINI_SECRET_KEY = os.getenv('GEMINI_SECRET_KEY')
+
 
 # Email Configuration
 # Email Configuration
