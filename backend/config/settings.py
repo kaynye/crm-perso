@@ -16,6 +16,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '[::1]',
+    'crm-perso.vercel.app',
     'unsilly-dexter-unpersonifying.ngrok-free.dev',
 ]
 
@@ -144,9 +145,11 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all in debug mode
 if not DEBUG:
     CORS_ALLOWED_ORIGINS = [
         "https://cms.2kvl.tech",
+        "https://crm-perso.vercel.app",
     ]
     CSRF_TRUSTED_ORIGINS = [
         "https://cms.2kvl.tech",
+        "https://crm-perso.vercel.app",
     ]
 
 # AI Configuration
