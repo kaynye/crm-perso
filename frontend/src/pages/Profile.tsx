@@ -1,15 +1,14 @@
 import React from 'react';
 import { User, Mail, Shield } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 import api from '../api/axios';
 
 const Profile: React.FC = () => {
-    // Placeholder data - in a real app, this would come from the auth context or API
-    const user = {
-        name: "Utilisateur",
-        email: "user@example.com",
-        role: "Admin"
-    };
+    const { user, loading } = useAuth();
+
+    if (loading) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;
+    if (!user) return <div className="p-8 text-center text-gray-500">Utilisateur introuvable</div>;
 
     const handleConnectGoogle = async () => {
         try {
@@ -41,7 +40,7 @@ const Profile: React.FC = () => {
                             <label className="block text-sm font-medium text-gray-500 mb-1">Nom</label>
                             <div className="flex items-center text-gray-900 text-lg font-medium">
                                 <User className="w-5 h-5 mr-3 text-gray-400" />
-                                {user.name}
+                                {user.username || user.email}
                             </div>
                         </div>
 
@@ -57,7 +56,7 @@ const Profile: React.FC = () => {
                             <label className="block text-sm font-medium text-gray-500 mb-1">Rôle</label>
                             <div className="flex items-center text-gray-900 text-lg font-medium">
                                 <Shield className="w-5 h-5 mr-3 text-gray-400" />
-                                {user.role}
+                                {user.is_admin ? "Admin" : "Utilisateur"}
                             </div>
                         </div>
 

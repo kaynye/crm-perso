@@ -9,5 +9,6 @@ urlpatterns = [
     path('search/global/', GlobalSearchView.as_view(), name='global_search'),
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
     path('upload/', UploadView.as_view(), name='upload'),
+    path('users/me/', UserViewSet.as_view({'get': 'me'}), name='user_me'),
     path('users/', UserViewSet.as_view({'get': 'list'}), name='user_list'),
 ]

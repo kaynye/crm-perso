@@ -5,11 +5,13 @@ import { FileText, TrendingUp, AlertCircle } from 'lucide-react';
 import RevenueChart from '../components/dashboard/RevenueChart';
 import TaskDistributionChart from '../components/dashboard/TaskDistributionChart';
 import SalesFunnelChart from '../components/dashboard/SalesFunnelChart';
+import { useAuth } from '../context/AuthContext';
 
 const Home: React.FC = () => {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     useEffect(() => {
         const fetchDashboard = async () => {
@@ -41,7 +43,7 @@ const Home: React.FC = () => {
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-900">{getGreeting()}, Utilisateur</h1>
+                <h1 className="text-3xl font-bold text-gray-900">{getGreeting()}, {user?.username || user?.email || 'Utilisateur'}</h1>
                 <div className="text-sm text-gray-500">
                     {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>

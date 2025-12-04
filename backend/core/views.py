@@ -4,6 +4,7 @@ from rest_framework import viewsets
 from .serializers import UserSerializer
 
 from rest_framework.views import APIView
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q, Case, When, Value, IntegerField
@@ -267,6 +268,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = get_user_model().objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
 
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
