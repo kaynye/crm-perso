@@ -18,7 +18,11 @@ const CompanyList: React.FC = () => {
     const fetchCompanies = async () => {
         try {
             const response = await api.get('/crm/companies/');
-            setCompanies(response.data);
+            if (response.data.results) {
+                setCompanies(response.data.results);
+            } else {
+                setCompanies(response.data);
+            }
         } catch (error) {
             console.error("Failed to fetch companies", error);
         }

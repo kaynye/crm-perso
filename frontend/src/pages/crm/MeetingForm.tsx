@@ -26,7 +26,11 @@ const MeetingForm: React.FC = () => {
             try {
                 // Fetch companies for dropdown
                 const companiesRes = await api.get('/crm/companies/');
-                setCompanies(companiesRes.data);
+                if (companiesRes.data.results) {
+                    setCompanies(companiesRes.data.results);
+                } else {
+                    setCompanies(companiesRes.data);
+                }
 
                 // If editing, fetch meeting details
                 if (isEditMode) {
@@ -36,7 +40,11 @@ const MeetingForm: React.FC = () => {
                     // Fetch contracts for the selected company
                     if (meeting.company) {
                         const contractsRes = await api.get(`/crm/contracts/?company=${meeting.company}`);
-                        setContracts(contractsRes.data);
+                        if (contractsRes.data.results) {
+                            setContracts(contractsRes.data.results);
+                        } else {
+                            setContracts(contractsRes.data);
+                        }
                     }
 
                     setFormData({
@@ -53,7 +61,11 @@ const MeetingForm: React.FC = () => {
 
                     if (companyId) {
                         const contractsRes = await api.get(`/crm/contracts/?company=${companyId}`);
-                        setContracts(contractsRes.data);
+                        if (contractsRes.data.results) {
+                            setContracts(contractsRes.data.results);
+                        } else {
+                            setContracts(contractsRes.data);
+                        }
                     }
 
                     setFormData(prev => ({
@@ -76,7 +88,11 @@ const MeetingForm: React.FC = () => {
         if (companyId) {
             try {
                 const res = await api.get(`/crm/contracts/?company=${companyId}`);
-                setContracts(res.data);
+                if (res.data.results) {
+                    setContracts(res.data.results);
+                } else {
+                    setContracts(res.data);
+                }
             } catch (error) {
                 console.error("Failed to fetch contracts", error);
             }

@@ -26,7 +26,11 @@ const ContractForm: React.FC = () => {
         const fetchData = async () => {
             try {
                 const companiesRes = await api.get('/crm/companies/');
-                setCompanies(companiesRes.data);
+                if (companiesRes.data.results) {
+                    setCompanies(companiesRes.data.results);
+                } else {
+                    setCompanies(companiesRes.data);
+                }
 
                 if (isEditMode) {
                     const contractRes = await api.get(`/crm/contracts/${id}/`);

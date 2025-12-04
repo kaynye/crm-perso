@@ -17,7 +17,11 @@ const ContactList: React.FC = () => {
     const fetchContacts = async () => {
         try {
             const response = await api.get('/crm/contacts/');
-            setContacts(response.data);
+            if (response.data.results) {
+                setContacts(response.data.results);
+            } else {
+                setContacts(response.data);
+            }
         } catch (error) {
             console.error("Failed to fetch contacts", error);
         }

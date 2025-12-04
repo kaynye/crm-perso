@@ -33,7 +33,11 @@ const CompanyDetail: React.FC = () => {
     const fetchContracts = async () => {
         try {
             const response = await api.get(`/crm/contracts/?company=${id}`);
-            setContracts(response.data);
+            if (response.data.results) {
+                setContracts(response.data.results);
+            } else {
+                setContracts(response.data);
+            }
         } catch (error) {
             console.error("Failed to fetch contracts", error);
         }
@@ -42,7 +46,11 @@ const CompanyDetail: React.FC = () => {
     const fetchMeetings = async () => {
         try {
             const response = await api.get(`/crm/meetings/?company=${id}`);
-            setMeetings(response.data);
+            if (response.data.results) {
+                setMeetings(response.data.results);
+            } else {
+                setMeetings(response.data);
+            }
         } catch (error) {
             console.error("Failed to fetch meetings", error);
         }
