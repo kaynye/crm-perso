@@ -6,7 +6,7 @@ from .serializers import UserSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Q
+from django.db.models import Q, Case, When, Value, IntegerField
 from pages.models import Page
 from crm.models import Company, Contact
 from tasks.models import Task
@@ -150,8 +150,21 @@ class DashboardView(APIView):
             'updated_at': p.updated_at
         } for p in recent_pages]
 
-        # My Tasks
-        my_tasks = Task.objects.filter(assigned_to=request.user).exclude(status='done').order_by('due_date')[:5]
+        # My Tasks - Urgent first (High priority), then by due date (earliest first), nulls last
+        my_tasks = Task.objects.filter(assigned_to=request.user).exclude(status='done').annotate(
+            priority_sort=Case(
+                When(priority='high', then=Value(1)),
+                When(priority='medium', then=Value(2)),
+                When(priority='low', then=Value(3)),
+                default=Value(4),
+                output_field=IntegerField(),
+            ),
+            due_date_sort=Case(
+                When(due_date__isnull=True, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        ).order_by('priority_sort', 'due_date_sort', 'due_date')[:5]
         my_tasks_data = [{
             'id': str(t.id),
             'title': t.title,
