@@ -9,6 +9,7 @@ def create_company_wiki_page(sender, instance, created, **kwargs):
             title=instance.name,
             page_type='wiki',
             company=instance,
+            organization=instance.organization,
             content=f'{{"blocks": [{{"type": "header", "data": {{"text": "{instance.name} Wiki", "level": 1}}}}]}}'
         )
 

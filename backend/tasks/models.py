@@ -30,7 +30,7 @@ class Task(models.Model):
     due_date = models.DateTimeField(null=True, blank=True)
     tags = models.CharField(max_length=255, blank=True)
     category = models.CharField(max_length=100, blank=True)
-    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, null=True, blank=True, related_name='tasks')
+    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, related_name='tasks')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

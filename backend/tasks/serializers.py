@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Task
+from core.validators import validate_cross_organization_reference
 
 class TaskSerializer(serializers.ModelSerializer):
     assigned_to_name = serializers.ReadOnlyField(source='assigned_to.username')
@@ -25,3 +26,14 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
+        read_only_fields = ['organization']
+
+    def validate(self, data):
+        validate_cross_organization_reference(
+            self.context['request'].user,
+            company=data.get('company'),
+            contract=data.get('contract'),
+            contact=data.get('contact'),
+            page=data.get('page')
+        )
+        return data
