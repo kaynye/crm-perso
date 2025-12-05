@@ -50,9 +50,27 @@ const ContractDetail: React.FC = () => {
     if (loading) return <div className="p-8">Chargement...</div>;
     if (!contract) return <div className="p-8">Contrat introuvable</div>;
 
+    const getStatusLabel = (status: string) => {
+        const statuses: Record<string, string> = {
+            'active': 'Actif',
+            'draft': 'Brouillon',
+            'signed': 'Signé',
+            'terminated': 'Terminé'
+        };
+        return statuses[status] || status;
+    };
+
+    const getMeetingTypeLabel = (type: string) => {
+        const types: Record<string, string> = {
+            'in_person': 'En présentiel',
+            'video': 'Visioconférence',
+            'phone': 'Téléphone'
+        };
+        return types[type] || type;
+    };
+
     return (
         <div className="flex flex-col h-full bg-gray-50">
-            {/* Header */}
             {/* Header */}
             <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
                 <div className="flex items-start gap-4 w-full md:w-auto">
@@ -77,7 +95,7 @@ const ContractDetail: React.FC = () => {
                                         contract.status === 'signed' ? "bg-blue-100 text-blue-800" :
                                             "bg-purple-100 text-purple-800"
                             )}>
-                                {contract.status}
+                                {getStatusLabel(contract.status)}
                             </span>
                         </div>
                     </div>
@@ -173,31 +191,27 @@ const ContractDetail: React.FC = () => {
                         </div>
                         <div className="grid gap-4">
                             {meetings.map(meeting => (
-                                <div key={meeting.id} onClick={() => navigate(`/crm/meetings/${meeting.id}`)} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:border-indigo-500 transition-colors">
-                                    <div className="flex justify-between items-start mb-2">
+                                <div key={meeting.id} onClick={() => navigate(`/crm/meetings/${meeting.id}`)} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:border-indigo-500 transition-all hover:shadow-md group">
+                                    <div className="flex justify-between items-start mb-4">
                                         <div>
-                                            <h3 className="font-medium text-gray-900">{meeting.title}</h3>
-                                            <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
-                                                <Calendar size={14} />
-                                                {new Date(meeting.date).toLocaleString('fr-FR')}
-                                                <span className="capitalize px-2 py-0.5 bg-gray-100 rounded text-xs">
-                                                    {meeting.type}
+                                            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{meeting.title}</h3>
+                                            <div className="text-sm text-gray-500 flex items-center gap-3 mt-2">
+                                                <span className="flex items-center gap-1.5">
+                                                    <Calendar size={14} className="text-gray-400" />
+                                                    {new Date(meeting.date).toLocaleString('fr-FR')}
+                                                </span>
+                                                <span className="px-2.5 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium capitalize">
+                                                    {getMeetingTypeLabel(meeting.type)}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
-                                    {meeting.notes && (
-                                        <div className="mt-4 border-t border-gray-100 pt-4">
-                                            <div className="prose prose-sm max-w-none">
-                                                <p className="text-gray-500 italic">Cliquez pour voir les notes...</p>
-                                            </div>
-                                        </div>
-                                    )}
+
                                 </div>
                             ))}
                             {meetings.length === 0 && (
-                                <div className="text-center py-12 text-gray-500">
-                                    Aucune réunion enregistrée pour ce contrat.
+                                <div className="text-center py-12 bg-white rounded-lg border border-gray-200 border-dashed">
+                                    <p className="text-gray-500">Aucune réunion enregistrée pour ce contrat.</p>
                                 </div>
                             )}
                         </div>

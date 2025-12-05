@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axios';
-import { Plus, Trash2, Edit2, Save } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, ArrowLeft } from 'lucide-react';
 import Editor from '../../components/Editor';
 import type { OutputData } from '@editorjs/editorjs';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface Template {
     id: string;
@@ -15,6 +16,11 @@ const MeetingTemplates: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [currentTemplate, setCurrentTemplate] = useState<Partial<Template>>({});
     const [editorData, setEditorData] = useState<OutputData>({ blocks: [] });
+    const [initialEditorData, setInitialEditorData] = useState<OutputData>({ blocks: [] });
+
+    const location = useLocation();
+    const navigate = useNavigate();
+    const returnTo = location.state?.returnTo;
 
     useEffect(() => {
         fetchTemplates();
@@ -23,25 +29,38 @@ const MeetingTemplates: React.FC = () => {
     const fetchTemplates = async () => {
         try {
             const response = await api.get('/crm/meeting-templates/');
-            setTemplates(response.data);
+            if (Array.isArray(response.data)) {
+                setTemplates(response.data);
+            } else if (response.data.results && Array.isArray(response.data.results)) {
+                setTemplates(response.data.results);
+            } else {
+                setTemplates([]);
+            }
         } catch (error) {
             console.error("Failed to fetch templates", error);
+            setTemplates([]);
         }
     };
 
     const handleEdit = (template: Template) => {
         setCurrentTemplate(template);
         try {
-            setEditorData(JSON.parse(template.content));
+            const data = JSON.parse(template.content);
+            setInitialEditorData(data);
+            setEditorData(data);
         } catch (e) {
-            setEditorData({ blocks: [] });
+            const empty = { blocks: [] };
+            setInitialEditorData(empty);
+            setEditorData(empty);
         }
         setIsEditing(true);
     };
 
     const handleCreate = () => {
         setCurrentTemplate({ name: '' });
-        setEditorData({ blocks: [] });
+        const empty = { blocks: [] };
+        setInitialEditorData(empty);
+        setEditorData(empty);
         setIsEditing(true);
     };
 
@@ -79,21 +98,21 @@ const MeetingTemplates: React.FC = () => {
 
     if (isEditing) {
         return (
-            <div className="p-8 max-w-4xl mx-auto h-full flex flex-col">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900">
+            <div className="p-4 md:p-8 max-w-4xl mx-auto h-full flex flex-col">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                         {currentTemplate.id ? 'Modifier le modèle' : 'Nouveau modèle'}
                     </h1>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full md:w-auto">
                         <button
                             onClick={() => setIsEditing(false)}
-                            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            className="flex-1 md:flex-none px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 text-center"
                         >
                             Annuler
                         </button>
                         <button
                             onClick={handleSave}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
+                            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
                         >
                             <Save size={16} />
                             Enregistrer
@@ -116,9 +135,10 @@ const MeetingTemplates: React.FC = () => {
                     <div className="p-4 border-b border-gray-200 bg-gray-50">
                         <h3 className="font-medium text-gray-900">Contenu du modèle</h3>
                     </div>
-                    <div className="p-6 flex-1 overflow-y-auto prose max-w-none">
+                    <div className="p-4 md:p-6 flex-1 overflow-y-auto prose max-w-none">
                         <Editor
-                            data={editorData}
+                            key={currentTemplate.id || 'new'} // Force re-mount on template switch
+                            data={initialEditorData} // Use initial data to prevent re-renders on type
                             onChange={setEditorData}
                             readOnly={false}
                         />
@@ -129,15 +149,26 @@ const MeetingTemplates: React.FC = () => {
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Modèles de Réunion</h1>
+                    <div className="flex items-center gap-2">
+                        {returnTo && (
+                            <button
+                                onClick={() => navigate(returnTo)}
+                                className="text-gray-400 hover:text-gray-600"
+                                title="Retour à la réunion"
+                            >
+                                <ArrowLeft size={24} />
+                            </button>
+                        )}
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Modèles de Réunion</h1>
+                    </div>
                     <p className="mt-2 text-gray-600">Gérez les structures types pour vos comptes-rendus.</p>
                 </div>
                 <button
                     onClick={handleCreate}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
+                    className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
                 >
                     <Plus size={16} />
                     Nouveau modèle
@@ -149,7 +180,7 @@ const MeetingTemplates: React.FC = () => {
                     <div key={template.id} className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:border-indigo-500 transition-colors">
                         <h3 className="text-lg font-medium text-gray-900 mb-2">{template.name}</h3>
                         <p className="text-sm text-gray-500 mb-4">
-                            Créé le {new Date().toLocaleDateString()} {/* Date field not in initial fetch, assuming for now */}
+                            Modèle personnalisé
                         </p>
                         <div className="flex justify-end gap-2">
                             <button

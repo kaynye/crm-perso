@@ -23,9 +23,16 @@ const MeetingDetail: React.FC = () => {
     const fetchTemplates = async () => {
         try {
             const response = await api.get('/crm/meeting-templates/');
-            setTemplates(response.data);
+            if (Array.isArray(response.data)) {
+                setTemplates(response.data);
+            } else if (response.data.results && Array.isArray(response.data.results)) {
+                setTemplates(response.data.results);
+            } else {
+                setTemplates([]);
+            }
         } catch (error) {
             console.error("Failed to fetch templates", error);
+            setTemplates([]);
         }
     };
 
@@ -86,31 +93,41 @@ const MeetingDetail: React.FC = () => {
         }).join('\n');
     };
 
+    const getMeetingTypeLabel = (type: string) => {
+        const types: Record<string, string> = {
+            'in_person': 'En présentiel',
+            'video': 'Visioconférence',
+            'phone': 'Téléphone'
+        };
+        return types[type] || type;
+    };
+
     return (
         <div className="flex flex-col h-full bg-gray-50">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-600">
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start gap-4 w-full md:w-auto">
+                    <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-600 mt-1 md:mt-0 flex-shrink-0">
                         <ArrowLeft size={20} />
                     </button>
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-900">{meeting.title}</h1>
-                        <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                            <span className="flex items-center gap-1">
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-xl font-bold text-gray-900 break-words leading-tight">{meeting.title}</h1>
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mt-2">
+                            <span className="flex items-center gap-1 whitespace-nowrap">
                                 <Calendar size={14} />
                                 {meeting.date ? new Date(meeting.date).toLocaleString('fr-FR') : 'Aucune date'}
                             </span>
-                            <span className="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium capitalize">
-                                {meeting.type}
+                            <span className="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium capitalize whitespace-nowrap">
+                                {getMeetingTypeLabel(meeting.type)}
                             </span>
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full md:w-auto pl-9 md:pl-0">
                     <button
                         onClick={() => navigate(`/crm/meetings/${id}/edit`)}
-                        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        className="w-full md:w-auto flex justify-center items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
                         Modifier
                     </button>
@@ -118,10 +135,10 @@ const MeetingDetail: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-8">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8">
                 <div className="max-w-4xl mx-auto space-y-8">
                     {/* Info */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 grid grid-cols-2 gap-6">
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <h3 className="text-sm font-medium text-gray-500 mb-2">Entreprise</h3>
                             <div className="flex items-center gap-2 text-gray-900">
@@ -177,7 +194,7 @@ const MeetingDetail: React.FC = () => {
                                             )}
                                             <div className="border-t border-gray-100 mt-1 pt-1">
                                                 <button
-                                                    onClick={() => navigate('/meeting-templates')}
+                                                    onClick={() => navigate('/meeting-templates', { state: { returnTo: `/crm/meetings/${id}` } })}
                                                     className="block w-full text-left px-4 py-2 text-xs text-indigo-600 hover:bg-indigo-50 font-medium"
                                                 >
                                                     Gérer les modèles
