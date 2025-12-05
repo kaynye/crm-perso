@@ -1,23 +1,21 @@
 from rest_framework import viewsets, permissions
 from core.permissions import HasGeminiSecret
-
+from core.mixins import OrganizationScopeMixin
 
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Task
 from .serializers import TaskSerializer
 
-class TaskViewSet(viewsets.ModelViewSet):
+class TaskViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     permission_classes = [HasGeminiSecret]
 
-
-
     @action(detail=False, methods=['get'])
     def kanban(self, request):
         # Group tasks by status
-        tasks = Task.objects.all()
+        tasks = self.get_queryset()
         
         # Apply filters
         contract_id = request.query_params.get('contract')

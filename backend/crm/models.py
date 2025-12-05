@@ -11,6 +11,7 @@ class Company(models.Model):
     address = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     tags = models.CharField(max_length=255, blank=True) # Comma separated for now
+    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, null=True, blank=True, related_name='companies')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -30,6 +31,7 @@ class Contact(models.Model):
     position = models.CharField(max_length=100, blank=True)
     notes = models.TextField(blank=True)
     tags = models.CharField(max_length=255, blank=True)
+    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, null=True, blank=True, related_name='contacts')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -53,6 +55,7 @@ class Contract(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     file = models.FileField(upload_to='contracts/', null=True, blank=True)
     extracted_text = models.TextField(blank=True, null=True)
+    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, null=True, blank=True, related_name='contracts')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -74,6 +77,7 @@ class Meeting(models.Model):
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='video')
     notes = models.TextField(blank=True) # Editor.js JSON
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, null=True, blank=True, related_name='meetings')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -86,6 +90,7 @@ class Document(models.Model):
     contract = models.ForeignKey(Contract, related_name='documents', on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(max_length=255)
     file = models.FileField(upload_to='documents/')
+    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, null=True, blank=True, related_name='documents')
     uploaded_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -95,6 +100,7 @@ class MeetingTemplate(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     content = models.TextField(help_text="JSON structure for EditorJS")
+    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, null=True, blank=True, related_name='meeting_templates')
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):

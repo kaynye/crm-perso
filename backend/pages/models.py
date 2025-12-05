@@ -16,6 +16,7 @@ class Page(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField(default='{}', blank=True) # JSON for Editor.js
     page_type = models.CharField(max_length=20, choices=PAGE_TYPES, default='normal')
+    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, null=True, blank=True, related_name='pages')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
