@@ -13,6 +13,8 @@ import ContractForm from './pages/crm/ContractForm';
 import MeetingDetail from './pages/crm/MeetingDetail';
 import MeetingForm from './pages/crm/MeetingForm';
 import TaskBoard from './pages/tasks/TaskBoard';
+import DocumentManager from './pages/documents/DocumentManager';
+import MeetingTemplates from './pages/crm/MeetingTemplates';
 
 import DatabaseView from './components/database/DatabaseView';
 import Home from './pages/Home';
@@ -55,6 +57,8 @@ const AppRoutes: React.FC = () => {
         <Route path="crm/meetings/:id" element={<MeetingDetail />} />
         <Route path="crm/meetings/:id/edit" element={<MeetingForm />} />
         <Route path="tasks" element={<TaskBoard />} />
+        <Route path="documents" element={<DocumentManager />} />
+        <Route path="meeting-templates" element={<MeetingTemplates />} />
         <Route path="databases/:id" element={<DatabaseView />} />
         <Route path="profile" element={<Profile />} />
         <Route path="profile" element={<Profile />} />

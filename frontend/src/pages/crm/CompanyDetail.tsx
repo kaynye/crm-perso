@@ -3,13 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { MapPin, Plus, Building } from 'lucide-react';
 import clsx from 'clsx';
+import DocumentList from '../../components/documents/DocumentList';
 
 const CompanyDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [company, setCompany] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'contracts' | 'meetings'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'contracts' | 'meetings' | 'documents'>('overview');
     const [contracts, setContracts] = useState<any[]>([]);
     const [meetings, setMeetings] = useState<any[]>([]);
 
@@ -122,6 +123,15 @@ const CompanyDetail: React.FC = () => {
                         <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
                             {meetings.length}
                         </span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('documents')}
+                        className={clsx(
+                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
+                            activeTab === 'documents' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                        )}
+                    >
+                        Documents
                     </button>
                 </div>
             </div>
@@ -264,6 +274,10 @@ const CompanyDetail: React.FC = () => {
                             )}
                         </div>
                     </div>
+                )}
+
+                {activeTab === 'documents' && (
+                    <DocumentList companyId={id} />
                 )}
             </div>
         </div>

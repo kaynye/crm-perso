@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Company, Contact, Contract, Meeting
+from .models import Company, Contact, Contract, Meeting, Document, MeetingTemplate
 
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
@@ -27,4 +27,17 @@ class CompanySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Company
+        fields = '__all__'
+
+class DocumentSerializer(serializers.ModelSerializer):
+    company_name = serializers.ReadOnlyField(source='company.name')
+    contract_title = serializers.ReadOnlyField(source='contract.title')
+
+    class Meta:
+        model = Document
+        fields = '__all__'
+
+class MeetingTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MeetingTemplate
         fields = '__all__'

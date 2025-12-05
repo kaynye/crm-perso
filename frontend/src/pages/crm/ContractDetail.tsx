@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import { ArrowLeft, DollarSign, Calendar, FileText, Plus } from 'lucide-react';
 import TaskBoard from '../tasks/TaskBoard';
 import clsx from 'clsx';
+import DocumentList from '../../components/documents/DocumentList';
 
 
 const ContractDetail: React.FC = () => {
@@ -11,7 +12,7 @@ const ContractDetail: React.FC = () => {
     const navigate = useNavigate();
     const [contract, setContract] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'tasks' | 'meetings'>('tasks');
+    const [activeTab, setActiveTab] = useState<'tasks' | 'meetings' | 'documents'>('tasks');
     const [meetings, setMeetings] = useState<any[]>([]);
 
     useEffect(() => {
@@ -33,9 +34,16 @@ const ContractDetail: React.FC = () => {
     const fetchMeetings = async () => {
         try {
             const response = await api.get(`/crm/meetings/?contract=${id}`);
-            setMeetings(response.data);
+            if (Array.isArray(response.data)) {
+                setMeetings(response.data);
+            } else if (response.data.results && Array.isArray(response.data.results)) {
+                setMeetings(response.data.results);
+            } else {
+                setMeetings([]);
+            }
         } catch (error) {
             console.error("Failed to fetch meetings", error);
+            setMeetings([]);
         }
     };
 
@@ -45,24 +53,25 @@ const ContractDetail: React.FC = () => {
     return (
         <div className="flex flex-col h-full bg-gray-50">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-600">
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
+                <div className="flex items-start gap-4 w-full md:w-auto">
+                    <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-600 mt-1 md:mt-0 flex-shrink-0">
                         <ArrowLeft size={20} />
                     </button>
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-900">{contract.title}</h1>
-                        <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                            <span className="flex items-center gap-1">
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-xl font-bold text-gray-900 break-words">{contract.title}</h1>
+                        <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500 mt-1">
+                            <span className="flex items-center gap-1 whitespace-nowrap">
                                 <DollarSign size={14} />
                                 {contract.amount ? `${contract.amount} €` : 'Aucun montant'}
                             </span>
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-1 whitespace-nowrap">
                                 <Calendar size={14} />
                                 {contract.start_date} - {contract.end_date || 'En cours'}
                             </span>
                             <span className={clsx(
-                                "px-2 py-0.5 rounded-full text-xs font-medium capitalize",
+                                "px-2 py-0.5 rounded-full text-xs font-medium capitalize whitespace-nowrap",
                                 contract.status === 'active' ? "bg-green-100 text-green-800" :
                                     contract.status === 'draft' ? "bg-gray-100 text-gray-800" :
                                         contract.status === 'signed' ? "bg-blue-100 text-blue-800" :
@@ -73,21 +82,22 @@ const ContractDetail: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                     {contract.file && (
                         <a
                             href={contract.file}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            className="flex-1 md:flex-none justify-center flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap"
                         >
                             <FileText size={16} />
-                            Voir le PDF du contrat
+                            <span className="hidden sm:inline">Voir le PDF</span>
+                            <span className="sm:hidden">PDF</span>
                         </a>
                     )}
                     <button
                         onClick={() => navigate(`/crm/contracts/${id}/edit`)}
-                        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        className="flex-1 md:flex-none justify-center flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
                         Modifier
                     </button>
@@ -103,7 +113,7 @@ const ContractDetail: React.FC = () => {
                                 }
                             }
                         }}
-                        className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-700 rounded-md text-sm font-medium hover:bg-red-100"
+                        className="flex-1 md:flex-none justify-center flex items-center gap-2 px-3 py-2 bg-red-50 text-red-700 rounded-md text-sm font-medium hover:bg-red-100"
                     >
                         Supprimer
                     </button>
@@ -131,14 +141,25 @@ const ContractDetail: React.FC = () => {
                     >
                         Réunions
                     </button>
+                    <button
+                        onClick={() => setActiveTab('documents')}
+                        className={clsx(
+                            "py-3 text-sm font-medium border-b-2 transition-colors",
+                            activeTab === 'documents' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                        )}
+                    >
+                        Documents
+                    </button>
                 </div>
             </div>
 
             {/* Content */}
             <div className="flex-1 overflow-hidden">
-                {activeTab === 'tasks' ? (
+                {activeTab === 'tasks' && (
                     <TaskBoard filter={{ contract: id }} />
-                ) : (
+                )}
+
+                {activeTab === 'meetings' && (
                     <div className="p-6 overflow-y-auto h-full">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-medium text-gray-900">Réunions</h2>
@@ -180,6 +201,12 @@ const ContractDetail: React.FC = () => {
                                 </div>
                             )}
                         </div>
+                    </div>
+                )}
+
+                {activeTab === 'documents' && (
+                    <div className="p-6 overflow-y-auto h-full">
+                        <DocumentList contractId={id} companyId={contract.company} />
                     </div>
                 )}
             </div>

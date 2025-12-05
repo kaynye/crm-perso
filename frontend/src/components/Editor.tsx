@@ -12,11 +12,11 @@ interface EditorProps {
     data: OutputData;
     onChange: (data: OutputData) => void;
     readOnly?: boolean;
+    holderId?: string;
 }
 
-const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false }) => {
+const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false, holderId = 'editorjs-holder' }) => {
     const ref = useRef<EditorJS | null>(null);
-    const holderId = 'editorjs-holder';
     const [isMentionModalOpen, setIsMentionModalOpen] = useState(false);
     const [savedRange, setSavedRange] = useState<Range | null>(null);
     const [popover, setPopover] = useState<{ x: number; y: number; url: string; label: string } | null>(null);

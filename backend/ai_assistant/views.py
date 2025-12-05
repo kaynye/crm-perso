@@ -25,3 +25,16 @@ class ChatView(APIView):
             'content': agent_response.get('content', ''),
             'action': agent_response.get('action', None)
         })
+
+class SummarizeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        text = request.data.get('text', '')
+        if not text:
+            return Response({'error': 'No text provided'}, status=400)
+
+        llm = LLMService()
+        summary = llm.summarize_text(text)
+        
+        return Response({'summary': summary})

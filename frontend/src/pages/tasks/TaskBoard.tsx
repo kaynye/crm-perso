@@ -3,6 +3,7 @@ import api from '../../api/axios';
 import { Plus, X } from 'lucide-react';
 import ActionsMenu from '../../components/ActionsMenu';
 import TaskDetail from './TaskDetail';
+import TaskCalendar from './TaskCalendar';
 
 interface TaskBoardProps {
     filter?: Record<string, any>;
@@ -10,6 +11,7 @@ interface TaskBoardProps {
 
 const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
     const [tasks, setTasks] = useState<any>({ todo: [], in_progress: [], done: [] });
+    const [viewMode, setViewMode] = useState<'kanban' | 'calendar'>('kanban');
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
     const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -155,21 +157,46 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
         </div>
     );
 
+    // Flatten tasks for calendar view
+    const allTasks = [...(tasks.todo || []), ...(tasks.in_progress || []), ...(tasks.done || [])];
+
     return (
         <div className="p-4 md:p-8 h-full flex flex-col bg-white">
-            <div className="flex justify-between items-center mb-6 md:mb-8">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Tableau des Tâches</h1>
-                <button onClick={() => setIsNewTaskModalOpen(true)} className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm text-sm font-medium">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0 mb-6 md:mb-8">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:space-x-4 w-full md:w-auto">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Tableau des Tâches</h1>
+                    <div className="bg-gray-100 p-1 rounded-lg flex w-full md:w-auto">
+                        <button
+                            onClick={() => setViewMode('kanban')}
+                            className={`flex-1 md:flex-none px-3 py-1 text-sm font-medium rounded-md transition-all ${viewMode === 'kanban' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Kanban
+                        </button>
+                        <button
+                            onClick={() => setViewMode('calendar')}
+                            className={`flex-1 md:flex-none px-3 py-1 text-sm font-medium rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Calendrier
+                        </button>
+                    </div>
+                </div>
+                <button onClick={() => setIsNewTaskModalOpen(true)} className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm text-sm font-medium">
                     <Plus size={16} className="mr-2" />
                     Nouvelle Tâche
                 </button>
             </div>
 
-            <div className="flex flex-1 overflow-x-auto pb-4 -mx-2 px-2 snap-x snap-mandatory">
-                <Column title="À faire" status="todo" items={tasks.todo || []} />
-                <Column title="En cours" status="in_progress" items={tasks.in_progress || []} />
-                <Column title="Terminé" status="done" items={tasks.done || []} />
-            </div>
+            {viewMode === 'kanban' ? (
+                <div className="flex flex-1 overflow-x-auto pb-4 -mx-2 px-2 snap-x snap-mandatory">
+                    <Column title="À faire" status="todo" items={tasks.todo || []} />
+                    <Column title="En cours" status="in_progress" items={tasks.in_progress || []} />
+                    <Column title="Terminé" status="done" items={tasks.done || []} />
+                </div>
+            ) : (
+                <div className="flex-1 overflow-hidden">
+                    <TaskCalendar tasks={allTasks} onTaskClick={setSelectedTaskId} />
+                </div>
+            )}
 
             {/* Task Detail Sidebar/Modal */}
             {selectedTaskId && (

@@ -299,3 +299,27 @@ class LLMService:
             return terms
         except:
             return query.split()
+
+    def summarize_text(self, text):
+        """
+        Summarizes the given text using the LLM.
+        """
+        system_prompt = """
+        You are an expert summarizer. 
+        Summarize the following text in a concise and professional manner.
+        Highlight key points, decisions made, and action items if any.
+        The summary should be in French.
+        """
+        
+        messages = [
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': text}
+        ]
+        
+        try:
+            if self.provider == 'gemini':
+                return self._chat_gemini(messages)
+            else:
+                return self._chat_openai(messages)
+        except Exception as e:
+            return f"Error generating summary: {str(e)}"

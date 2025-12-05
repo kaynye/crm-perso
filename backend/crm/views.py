@@ -5,8 +5,8 @@ from core.permissions import HasGeminiSecret
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Company, Contact, Contract, Meeting
-from .serializers import CompanySerializer, ContactSerializer, ContractSerializer, MeetingSerializer
+from .models import Company, Contact, Contract, Meeting, Document, MeetingTemplate
+from .serializers import CompanySerializer, ContactSerializer, ContractSerializer, MeetingSerializer, DocumentSerializer, MeetingTemplateSerializer
 
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all()
@@ -46,3 +46,15 @@ class MeetingViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+class DocumentViewSet(viewsets.ModelViewSet):
+    queryset = Document.objects.all()
+    serializer_class = DocumentSerializer
+    permission_classes = [HasGeminiSecret]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['company', 'contract']
+
+class MeetingTemplateViewSet(viewsets.ModelViewSet):
+    queryset = MeetingTemplate.objects.all()
+    serializer_class = MeetingTemplateSerializer
+    permission_classes = [HasGeminiSecret]

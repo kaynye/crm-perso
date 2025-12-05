@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import { ArrowLeft, Calendar, Building } from 'lucide-react';
 import Editor from '../../components/Editor';
 import type { OutputData } from '@editorjs/editorjs';
+import AISummary from '../../components/common/AISummary';
 
 const MeetingDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -12,10 +13,21 @@ const MeetingDetail: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [editorData, setEditorData] = useState<OutputData>({ blocks: [] });
     const [isTemplateMenuOpen, setIsTemplateMenuOpen] = useState(false);
+    const [templates, setTemplates] = useState<any[]>([]);
 
     useEffect(() => {
         fetchMeeting();
+        fetchTemplates();
     }, [id]);
+
+    const fetchTemplates = async () => {
+        try {
+            const response = await api.get('/crm/meeting-templates/');
+            setTemplates(response.data);
+        } catch (error) {
+            console.error("Failed to fetch templates", error);
+        }
+    };
 
     const fetchMeeting = async () => {
         try {
@@ -46,55 +58,32 @@ const MeetingDetail: React.FC = () => {
     if (loading) return <div className="p-8">Chargement...</div>;
     if (!meeting) return <div className="p-8">Réunion introuvable</div>;
 
-    const templates = {
-        discovery: {
-            blocks: [
-                { type: "header", data: { text: "Appel de Découverte", level: 2 } },
-                { type: "header", data: { text: "Participants", level: 3 } },
-                { type: "list", data: { style: "unordered", items: ["Client : ", "Interne : "] } },
-                { type: "header", data: { text: "Ordre du jour", level: 3 } },
-                { type: "list", data: { style: "unordered", items: ["Introduction et présentation", "Analyse des besoins", "Démonstration (si applicable)", "Prochaines étapes"] } },
-                { type: "header", data: { text: "Notes de discussion", level: 3 } },
-                { type: "paragraph", data: { text: "Points clés abordés..." } },
-                { type: "header", data: { text: "Points de douleur (Pain Points)", level: 3 } },
-                { type: "list", data: { style: "unordered", items: [""] } },
-                { type: "header", data: { text: "Budget et Délais", level: 3 } },
-                { type: "paragraph", data: { text: "Budget estimé : \nDate de lancement souhaitée : " } }
-            ]
-        },
-        update: {
-            blocks: [
-                { type: "header", data: { text: "Point d'Avancement Projet", level: 2 } },
-                { type: "header", data: { text: "État d'avancement", level: 3 } },
-                { type: "list", data: { style: "unordered", items: ["✅ Terminé : ", "🚧 En cours : ", "📅 À venir : "] } },
-                { type: "header", data: { text: "Points bloquants / Risques", level: 3 } },
-                { type: "paragraph", data: { text: "Aucun pour le moment." } },
-                { type: "header", data: { text: "Décisions prises", level: 3 } },
-                { type: "list", data: { style: "unordered", items: [""] } },
-                { type: "header", data: { text: "Prochaines étapes (Action Items)", level: 3 } },
-                { type: "list", data: { style: "unordered", items: ["Qui : Quoi (Date)"] } }
-            ]
-        },
-        closing: {
-            blocks: [
-                { type: "header", data: { text: "Réunion de Clôture", level: 2 } },
-                { type: "header", data: { text: "Bilan du projet", level: 3 } },
-                { type: "paragraph", data: { text: "Résumé des réalisations..." } },
-                { type: "header", data: { text: "Livrables validés", level: 3 } },
-                { type: "list", data: { style: "unordered", items: [""] } },
-                { type: "header", data: { text: "Feedback Client", level: 3 } },
-                { type: "paragraph", data: { text: "Points positifs : \nPoints à améliorer : " } }
-            ]
+    const applyTemplate = (templateId: string) => {
+        const template = templates.find(t => t.id === templateId);
+        if (!template) return;
+
+        if (window.confirm('Ceci écrasera les notes actuelles. Continuer ?')) {
+            try {
+                const newData = JSON.parse(template.content);
+                setEditorData(newData);
+                handleNotesSave(newData);
+            } catch (e) {
+                console.error("Failed to parse template content", e);
+            }
+            setIsTemplateMenuOpen(false);
         }
     };
 
-    const applyTemplate = (templateKey: keyof typeof templates) => {
-        if (window.confirm('Ceci écrasera les notes actuelles. Continuer ?')) {
-            const newData = templates[templateKey];
-            setEditorData(newData);
-            handleNotesSave(newData);
-            setIsTemplateMenuOpen(false);
-        }
+    const extractTextFromBlocks = (blocks: any[]) => {
+        if (!blocks || !Array.isArray(blocks)) return '';
+        return blocks.map(block => {
+            if (block.type === 'header' || block.type === 'paragraph') {
+                return block.data.text;
+            } else if (block.type === 'list') {
+                return block.data.items.join('\n');
+            }
+            return '';
+        }).join('\n');
     };
 
     return (
@@ -171,16 +160,29 @@ const MeetingDetail: React.FC = () => {
                                         Modèles
                                     </button>
                                     {isTemplateMenuOpen && (
-                                        <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-                                            <button onClick={() => applyTemplate('discovery')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                                Appel de Découverte
-                                            </button>
-                                            <button onClick={() => applyTemplate('update')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                                Point d'Avancement
-                                            </button>
-                                            <button onClick={() => applyTemplate('closing')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                                Clôture de Projet
-                                            </button>
+                                        <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10 max-h-60 overflow-y-auto">
+                                            {templates.map(template => (
+                                                <button
+                                                    key={template.id}
+                                                    onClick={() => applyTemplate(template.id)}
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                                >
+                                                    {template.name}
+                                                </button>
+                                            ))}
+                                            {templates.length === 0 && (
+                                                <div className="px-4 py-2 text-sm text-gray-500 italic">
+                                                    Aucun modèle disponible
+                                                </div>
+                                            )}
+                                            <div className="border-t border-gray-100 mt-1 pt-1">
+                                                <button
+                                                    onClick={() => navigate('/meeting-templates')}
+                                                    className="block w-full text-left px-4 py-2 text-xs text-indigo-600 hover:bg-indigo-50 font-medium"
+                                                >
+                                                    Gérer les modèles
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -191,6 +193,14 @@ const MeetingDetail: React.FC = () => {
                                 data={editorData}
                                 onChange={handleNotesSave}
                                 readOnly={false} // Always editable
+                            />
+
+                            <AISummary
+                                textToSummarize={extractTextFromBlocks(editorData.blocks)}
+                                onSummaryGenerated={(summary) => {
+                                    // Optional: could save summary to meeting notes or a separate field
+                                    console.log("Summary generated:", summary);
+                                }}
                             />
                         </div>
                     </div>

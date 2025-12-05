@@ -49,9 +49,16 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
     const fetchUsers = async () => {
         try {
             const response = await api.get('/users/');
-            setUsers(response.data);
+            if (Array.isArray(response.data)) {
+                setUsers(response.data);
+            } else if (response.data.results && Array.isArray(response.data.results)) {
+                setUsers(response.data.results);
+            } else {
+                setUsers([]);
+            }
         } catch (error) {
             console.error("Failed to fetch users", error);
+            setUsers([]);
         }
     };
 
@@ -203,7 +210,11 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
                 {/* Description (Editor) */}
                 <div className="flex-1 overflow-y-auto px-6 py-6">
                     <div className="prose max-w-none">
-                        <Editor data={editorData} onChange={handleDescriptionSave} />
+                        <Editor
+                            holderId={`editor-task-${taskId}`}
+                            data={editorData}
+                            onChange={handleDescriptionSave}
+                        />
                     </div>
                 </div>
             </div>

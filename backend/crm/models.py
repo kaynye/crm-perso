@@ -79,3 +79,23 @@ class Meeting(models.Model):
 
     def __str__(self):
         return self.title
+
+class Document(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    company = models.ForeignKey(Company, related_name='documents', on_delete=models.CASCADE, null=True, blank=True)
+    contract = models.ForeignKey(Contract, related_name='documents', on_delete=models.SET_NULL, null=True, blank=True)
+    name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='documents/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.name
+
+class MeetingTemplate(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    content = models.TextField(help_text="JSON structure for EditorJS")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.name
