@@ -3,7 +3,7 @@ from django.conf import settings
 
 class EmailTools:
     @staticmethod
-    def send_email(to_email, subject, body):
+    def send_email(to_email, subject, body, user=None):
         """
         Sends an email using Django's configured backend.
         """

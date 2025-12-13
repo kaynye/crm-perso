@@ -6,6 +6,7 @@ import MentionTool from './editor-tools/MentionTool';
 import DatabaseTool from './editor-tools/DatabaseTool';
 import MentionModal from './MentionModal';
 import AttachesTool from './editor-tools/AttachesTool';
+import Table from '@editorjs/table';
 import { useNavigate } from 'react-router-dom';
 
 interface EditorProps {
@@ -72,6 +73,15 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false, holde
                     },
                     database: DatabaseTool,
                     attaches: AttachesTool,
+                    table: {
+                        class: Table as any,
+                        inlineToolbar: true,
+                        config: {
+                            rows: 2,
+                            cols: 3,
+                            withHeadings: true,
+                        }
+                    },
                 },
                 data: data,
                 readOnly: readOnly,

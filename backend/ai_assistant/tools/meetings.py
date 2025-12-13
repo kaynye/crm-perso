@@ -9,7 +9,10 @@ class MeetingTools:
         Creates a new meeting for a company.
         """
         # Find company
-        company = Company.objects.filter(name__icontains=company_name).first()
+        if not user or not hasattr(user, 'organization'):
+            return "Erreur: Impossible de déterminer l'organisation."
+
+        company = Company.objects.filter(name__icontains=company_name, organization=user.organization).first()
         if not company:
             return f"Entreprise '{company_name}' introuvable. Veuillez d'abord la créer."
 
@@ -38,7 +41,8 @@ class MeetingTools:
             date=meeting_date,
             type=type,
             notes=notes,
-            created_by=user
+            created_by=user,
+            organization=user.organization
         )
 
         return {

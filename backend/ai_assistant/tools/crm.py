@@ -4,10 +4,14 @@ from datetime import datetime
 
 class CRMTools:
     @staticmethod
-    def create_company(name, industry="", size="", website=""):
+    def create_company(name, industry="", size="", website="", user=None):
         """Creates a new company."""
+        if not user or not hasattr(user, 'organization'):
+            return "Erreur: Impossible de déterminer l'organisation."
+
         company, created = Company.objects.get_or_create(
             name=name,
+            organization=user.organization,
             defaults={
                 'industry': industry,
                 'size': size,
@@ -27,18 +31,22 @@ class CRMTools:
             return f"L'entreprise '{name}' existe déjà."
 
     @staticmethod
-    def create_contact(first_name, last_name, company_name="", email="", position=""):
+    def create_contact(first_name, last_name, company_name="", email="", position="", user=None):
         """Creates a new contact and links to a company if found."""
+        if not user or not hasattr(user, 'organization'):
+            return "Erreur: Impossible de déterminer l'organisation."
+
         company = None
         if company_name:
-            company = Company.objects.filter(name__icontains=company_name).first()
+            company = Company.objects.filter(name__icontains=company_name, organization=user.organization).first()
         
         contact = Contact.objects.create(
             first_name=first_name,
             last_name=last_name,
             company=company,
             email=email,
-            position=position
+            position=position,
+            organization=user.organization
         )
         
         msg = f"Contact '{first_name} {last_name}' créé."
@@ -49,9 +57,12 @@ class CRMTools:
         return msg
 
     @staticmethod
-    def create_contract(title, company_name, amount=None, status='draft'):
+    def create_contract(title, company_name, amount=None, status='draft', user=None):
         """Creates a new contract linked to a company."""
-        company = Company.objects.filter(name__icontains=company_name).first()
+        if not user or not hasattr(user, 'organization'):
+            return "Erreur: Impossible de déterminer l'organisation."
+
+        company = Company.objects.filter(name__icontains=company_name, organization=user.organization).first()
         if not company:
             return f"Erreur : Entreprise '{company_name}' introuvable. Veuillez d'abord créer l'entreprise."
             
@@ -59,7 +70,8 @@ class CRMTools:
             title=title,
             company=company,
             amount=amount,
-            status=status
+            status=status,
+            organization=user.organization
         )
         return {
             "message": f"Contrat '{title}' créé pour {company_name}.",
@@ -82,17 +94,20 @@ class CRMTools:
         return f"Statut du contrat '{contract.title}' mis à jour vers '{status}'."
 
     @staticmethod
-    def add_note(entity_type, entity_id, note_content):
+    def add_note(entity_type, entity_id, note_content, user=None):
         """Appends a note to an entity."""
+        if not user or not hasattr(user, 'organization'):
+            return "Erreur: Impossible de déterminer l'organisation."
+
         entity = None
         if entity_type == 'company':
-            entity = Company.objects.filter(id=entity_id).first()
+            entity = Company.objects.filter(id=entity_id, organization=user.organization).first()
         elif entity_type == 'contact':
-            entity = Contact.objects.filter(id=entity_id).first()
+            entity = Contact.objects.filter(id=entity_id, organization=user.organization).first()
         elif entity_type == 'contract':
-            entity = Contract.objects.filter(id=entity_id).first()
+            entity = Contract.objects.filter(id=entity_id, organization=user.organization).first()
         elif entity_type == 'meeting':
-            entity = Meeting.objects.filter(id=entity_id).first()
+            entity = Meeting.objects.filter(id=entity_id, organization=user.organization).first()
             
         if not entity:
             return f"Erreur : {entity_type} avec l'ID {entity_id} introuvable."

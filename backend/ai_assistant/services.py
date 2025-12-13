@@ -114,17 +114,22 @@ class LLMService:
         - CREATE_CONTACT: "Add contact John Doe to Acme to Acme" (params: first_name, last_name, company_name, email, position)
         - CREATE_CONTRACT: "New contract for Acme", "Draft contract video promotion" (params: title, company_name, amount, status)
         - UPDATE_CONTRACT: "Mark contract X as signed" (params: title, status)
-        - CREATE_TASK: "Remind me to call John tomorrow", "New task: Buy milk" (params: title, description, due_date)
+        - CREATE_TASK: "Remind me to call John tomorrow", "New task: Buy milk" (params: title, description, due_date) -> USE ONLY FOR SINGLE TASKS.
         - CREATE_MEETING: "Schedule call with Acme next Tuesday at 2pm", "Meeting with Bob on 2025-12-01 10:00" (params: title, company_name, date, type)
         - ADD_NOTE: "Add note 'Called him today'", "Note: Client is happy" (params: note_content, entity_type, entity_id)
         - ANALYZE_DATA: "Total contracts signed this month", "How many urgent tasks?" (params: entity_type, metric, time_period, filters)
         - DRAFT_CONTENT: "Draft email to TechNova about contract", "Write follow-up for meeting" (params: entity_type, entity_id, instruction)
         - SEND_EMAIL: "Send email to client@example.com", "Envoyer l'email" (params: to_email, subject, body)
-        - EXTRACT_TASKS: "Extract tasks from these notes", "Make todos from this meeting" (params: text)
+        - EXTRACT_TASKS: "Extract tasks from these notes", "Make todos from this meeting", "Create tasks for the week: Monday run, Tuesday gym...", "Sport task for every day next week", "Daily tasks for next month" (params: text) -> USE FOR MULTIPLE TASKS OR GENERATION.
+        - LIST_TASKS: "What are my tasks?", "Tasks for this month", "Urgent tasks" (params: status, priority, due_date_range)
         - SEARCH: General questions, "Who is X?", "What did we say about Y?" (No params)
         
         IMPORTANT:
         - For ADD_NOTE / DRAFT_CONTENT: If user is viewing a specific entity (see context), use that entity's type and ID.
+        - For LIST_TASKS:
+            - due_date_range: 'today', 'this_week', 'this_month', 'last_month', 'overdue'
+            - status: 'todo', 'in_progress', 'done'
+            - priority: 'low', 'medium', 'high'
         - For ANALYZE_DATA: 
             - entity_type: 'company', 'contract', 'task', 'meeting'
             - metric: 'count', 'sum_amount' (contracts), 'urgent_tasks'
@@ -159,32 +164,34 @@ class LLMService:
         """
         try:
             if tool_name == 'CREATE_COMPANY':
-                return CRMTools.create_company(**params)
+                return CRMTools.create_company(user=user, **params)
             elif tool_name == 'CREATE_CONTACT':
-                return CRMTools.create_contact(**params)
+                return CRMTools.create_contact(user=user, **params)
             elif tool_name == 'CREATE_CONTRACT':
-                return CRMTools.create_contract(**params)
+                return CRMTools.create_contract(user=user, **params)
             elif tool_name == 'UPDATE_CONTRACT':
                 return CRMTools.update_contract_status(**params)
             elif tool_name == 'CREATE_TASK':
-                return TaskTools.create_task(**params)
+                return TaskTools.create_task(user=user, **params)
             elif tool_name == 'CREATE_MEETING':
                 return MeetingTools.create_meeting(user=user, **params)
             elif tool_name == 'ADD_NOTE':
-                return CRMTools.add_note(**params)
+                return CRMTools.add_note(user=user, **params)
             elif tool_name == 'ANALYZE_DATA':
-                return AnalyticsTools.analyze_data(**params)
+                return AnalyticsTools.analyze_data(user=user, **params)
             elif tool_name == 'DRAFT_CONTENT':
                 # Pass self (LLMService instance) to the tool
-                return ContentTools.draft_content(llm_service=self, **params)
+                return ContentTools.draft_content(llm_service=self, user=user, **params)
             elif tool_name == 'SEND_EMAIL':
-                return EmailTools.send_email(**params)
+                return EmailTools.send_email(user=user, **params)
             elif tool_name == 'EXTRACT_TASKS':
                 # For extraction, we might need the full text if the user said "from these notes: [TEXT]"
                 # Or if they refer to previous context, but here we assume the text is in the prompt for now.
                 # If the text is not in params, use the raw input.
                 text_to_analyze = params.get('text') or raw_text
-                return TaskTools.extract_and_create_tasks(text_to_analyze, self)
+                return TaskTools.extract_and_create_tasks(text_to_analyze, self, user=user)
+            elif tool_name == 'LIST_TASKS':
+                return TaskTools.list_tasks(**params)
             else:
                 return "Unknown tool."
         except Exception as e:

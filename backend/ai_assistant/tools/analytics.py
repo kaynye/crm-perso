@@ -6,7 +6,7 @@ from tasks.models import Task
 
 class AnalyticsTools:
     @staticmethod
-    def analyze_data(entity_type, metric='count', time_period=None, filters=None):
+    def analyze_data(entity_type, metric='count', time_period=None, filters=None, user=None):
         """
         Performs analysis on data.
         entity_type: 'company', 'contract', 'task', 'meeting'
@@ -14,15 +14,18 @@ class AnalyticsTools:
         time_period: 'this_month', 'last_month', 'this_year', 'all_time'
         filters: dict of additional filters (e.g. {'status': 'signed'})
         """
+        if not user or not hasattr(user, 'organization'):
+            return "Erreur: Impossible de déterminer l'organisation. Utilisateur non authentifié."
+            
         queryset = None
         if entity_type == 'company':
-            queryset = Company.objects.all()
+            queryset = Company.objects.filter(organization=user.organization)
         elif entity_type == 'contract':
-            queryset = Contract.objects.all()
+            queryset = Contract.objects.filter(organization=user.organization)
         elif entity_type == 'task':
-            queryset = Task.objects.all()
+            queryset = Task.objects.filter(organization=user.organization)
         elif entity_type == 'meeting':
-            queryset = Meeting.objects.all()
+            queryset = Meeting.objects.filter(organization=user.organization)
             
         if queryset is None:
             return f"Unknown entity type: {entity_type}"
@@ -36,7 +39,7 @@ class AnalyticsTools:
         elif entity_type == 'meeting':
             date_field = 'date'
         elif entity_type == 'task':
-            date_field = 'created_at' # or due_date? Let's stick to created_at for "new tasks" logic, or handle specific queries later.
+            date_field = 'due_date'
 
         if time_period == 'this_month':
             queryset = queryset.filter(**{f"{date_field}__month": now.month, f"{date_field}__year": now.year})
