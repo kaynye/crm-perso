@@ -5,6 +5,8 @@ import { ArrowLeft, Calendar, Building } from 'lucide-react';
 import Editor from '../../components/Editor';
 import type { OutputData } from '@editorjs/editorjs';
 import AISummary from '../../components/common/AISummary';
+import { parseEditorJsData } from '../../utils/editorjs-html';
+import { generatePDF } from '../../utils/pdf-generator';
 
 const MeetingDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -12,6 +14,7 @@ const MeetingDetail: React.FC = () => {
     const [meeting, setMeeting] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [editorData, setEditorData] = useState<OutputData>({ blocks: [] });
+    const [initialEditorData, setInitialEditorData] = useState<OutputData | undefined>(undefined);
     const [isTemplateMenuOpen, setIsTemplateMenuOpen] = useState(false);
     const [templates, setTemplates] = useState<any[]>([]);
 
@@ -42,7 +45,9 @@ const MeetingDetail: React.FC = () => {
             setMeeting(response.data);
             if (response.data.notes) {
                 try {
-                    setEditorData(JSON.parse(response.data.notes));
+                    const parsed = JSON.parse(response.data.notes);
+                    setEditorData(parsed);
+                    setInitialEditorData(parsed);
                 } catch (e) {
                     console.error("Failed to parse notes", e);
                 }
@@ -55,6 +60,7 @@ const MeetingDetail: React.FC = () => {
     };
 
     const handleNotesSave = async (data: OutputData) => {
+        setEditorData(data); // Update local state for PDF generation only, do not update initialEditorData to avoid re-render
         try {
             await api.patch(`/crm/meetings/${id}/`, { notes: JSON.stringify(data) });
         } catch (error) {
@@ -73,6 +79,7 @@ const MeetingDetail: React.FC = () => {
             try {
                 const newData = JSON.parse(template.content);
                 setEditorData(newData);
+                setInitialEditorData(newData); // Force editor update
                 handleNotesSave(newData);
             } catch (e) {
                 console.error("Failed to parse template content", e);
@@ -100,6 +107,21 @@ const MeetingDetail: React.FC = () => {
             'phone': 'Téléphone'
         };
         return types[type] || type;
+    };
+
+    const handleDownloadPDF = () => {
+        console.log('Generating PDF with data:', editorData);
+        const content = parseEditorJsData(editorData);
+        console.log('Generated content HTML:', content);
+        generatePDF({
+            title: meeting.title,
+            contentHTML: content,
+            metadata: `
+                <p>Date: ${new Date(meeting.date).toLocaleString('fr-FR')}</p>
+                <p>Type: ${getMeetingTypeLabel(meeting.type)}</p>
+            `,
+            filename: `${meeting.title.replace(/\s+/g, '_')}_notes.pdf`
+        });
     };
 
     return (
@@ -130,6 +152,13 @@ const MeetingDetail: React.FC = () => {
                         className="w-full md:w-auto flex justify-center items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
                         Modifier
+                    </button>
+                    <button
+                        onClick={handleDownloadPDF}
+                        className="w-full md:w-auto flex justify-center items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                        <FileText size={16} />
+                        PDF
                     </button>
                 </div>
             </div>
@@ -207,7 +236,7 @@ const MeetingDetail: React.FC = () => {
                         </div>
                         <div className="p-6 flex-1 prose max-w-none">
                             <Editor
-                                data={editorData}
+                                data={initialEditorData || { blocks: [] }}
                                 onChange={handleNotesSave}
                                 readOnly={false} // Always editable
                             />

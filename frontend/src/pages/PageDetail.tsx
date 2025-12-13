@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom';
 import api from '../api/axios';
 import Editor from '../components/Editor';
 import type { OutputData } from '@editorjs/editorjs';
+import { generatePDF } from '../utils/pdf-generator';
+import { parseEditorJsData } from '../utils/editorjs-html';
+import { FileText } from 'lucide-react';
 
 const PageDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -46,8 +49,27 @@ const PageDetail: React.FC = () => {
         console.error("Failed to parse content", e);
     }
 
+    const handleDownloadPDF = () => {
+        if (!page) return;
+        const content = parseEditorJsData(contentData);
+        generatePDF({
+            title: page.title,
+            contentHTML: content,
+            filename: `${page.title.replace(/\s+/g, '_')}.pdf`
+        });
+    };
+
     return (
         <div className="max-w-4xl mx-auto p-12">
+            <div className="flex justify-end mb-4">
+                <button
+                    onClick={handleDownloadPDF}
+                    className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                    <FileText size={16} />
+                    PDF
+                </button>
+            </div>
             <input
                 className="text-4xl font-bold mb-8 text-gray-900 w-full border-none focus:outline-none focus:ring-0 placeholder-gray-300"
                 value={page.title}
