@@ -87,6 +87,17 @@ DATABASES = {
         "OPTIONS": {
             "charset": "utf8mb4",
         },
+    },
+    "chroma": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "chroma",
+        "USER": "chroma",
+        "PASSWORD": "Azertyuiop22!",
+        "HOST": "cms.2kvl.tech",
+        "PORT": "3306",
+        "OPTIONS": {
+            "charset": "utf8mb4",
+        },
     }
 }
 

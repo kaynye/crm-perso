@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CompanyViewSet, ContactViewSet, ContractViewSet, MeetingViewSet, DocumentViewSet, MeetingTemplateViewSet
+from .views import CompanyViewSet, ContactViewSet, ContractViewSet, MeetingViewSet, DocumentViewSet, MeetingTemplateViewSet, SharedLinkViewSet
+from .api_public import PublicSharedLinkView, PublicTaskViewSet, PublicMeetingViewSet, PublicDocumentViewSet
 
 router = DefaultRouter()
 router.register(r'companies', CompanyViewSet)
@@ -9,7 +10,16 @@ router.register(r'contracts', ContractViewSet)
 router.register(r'meetings', MeetingViewSet)
 router.register(r'documents', DocumentViewSet)
 router.register(r'meeting-templates', MeetingTemplateViewSet)
+router.register(r'shared-links', SharedLinkViewSet)
+
+
+public_router = DefaultRouter()
+public_router.register(r'tasks', PublicTaskViewSet, basename='public-tasks')
+public_router.register(r'meetings', PublicMeetingViewSet, basename='public-meetings')
+public_router.register(r'documents', PublicDocumentViewSet, basename='public-documents')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('public/config/', PublicSharedLinkView.as_view(), name='public-config'),
+    path('public/', include(public_router.urls)),
 ]

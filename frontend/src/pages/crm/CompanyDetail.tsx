@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
-import { MapPin, Plus, Building } from 'lucide-react';
+import { MapPin, Plus, Building, Share2 } from 'lucide-react';
 import clsx from 'clsx';
 import DocumentList from '../../components/documents/DocumentList';
+import ShareModal from '../../components/crm/ShareModal';
 
 const CompanyDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -13,6 +14,7 @@ const CompanyDetail: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'overview' | 'contracts' | 'meetings' | 'documents'>('overview');
     const [contracts, setContracts] = useState<any[]>([]);
     const [meetings, setMeetings] = useState<any[]>([]);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     useEffect(() => {
         fetchCompany();
@@ -81,6 +83,13 @@ const CompanyDetail: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                    <button
+                        onClick={() => setIsShareModalOpen(true)}
+                        className="w-full md:w-auto px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                    >
+                        <Share2 size={16} />
+                        Partager
+                    </button>
                     <button
                         onClick={() => navigate(`/crm/companies/${id}/edit`)}
                         className="w-full md:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
@@ -280,6 +289,12 @@ const CompanyDetail: React.FC = () => {
                     <DocumentList companyId={id} />
                 )}
             </div>
+            {/* Share Modal */}
+            <ShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                companyId={id}
+            />
         </div>
     );
 };

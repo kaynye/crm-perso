@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 import uuid
+import secrets
 
 class Company(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -105,3 +106,31 @@ class MeetingTemplate(models.Model):
     
     def __str__(self):
         return self.name
+
+class SharedLink(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    token = models.CharField(max_length=64, unique=True, db_index=True, editable=False)
+    
+    # Scope (can be linked to a Company or a specific Project/Contract)
+    company = models.ForeignKey(Company, null=True, blank=True, on_delete=models.CASCADE, related_name='shared_links')
+    contract = models.ForeignKey(Contract, null=True, blank=True, on_delete=models.CASCADE, related_name='shared_links')
+    
+    # Permissions
+    allow_tasks = models.BooleanField(default=True)
+    allow_meetings = models.BooleanField(default=True)
+    allow_documents = models.BooleanField(default=True)
+    
+    # Metadata
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    views_count = models.PositiveIntegerField(default=0)
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        target = self.contract or self.company
+        return f"Shared Link for {target}"

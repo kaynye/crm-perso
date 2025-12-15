@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Company, Contact, Contract, Meeting, Document, MeetingTemplate
+from .models import Company, Contact, Contract, Meeting, Document, MeetingTemplate, SharedLink
 from core.validators import validate_cross_organization_reference
 
 class ContactSerializer(serializers.ModelSerializer):
@@ -78,3 +78,23 @@ class MeetingTemplateSerializer(serializers.ModelSerializer):
         model = MeetingTemplate
         fields = '__all__'
         read_only_fields = ['organization']
+
+class SharedLinkSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = SharedLink
+        fields = '__all__'
+        read_only_fields = ['token', 'views_count', 'created_by']
+
+    def get_url(self, obj):
+        # Return relative path for frontend
+        return f"/shared/{obj.token}"
+    
+    def validate(self, data):
+        validate_cross_organization_reference(
+            self.context['request'].user,
+            company=data.get('company'),
+            contract=data.get('contract')
+        )
+        return data

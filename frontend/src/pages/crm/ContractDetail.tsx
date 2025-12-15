@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
-import { ArrowLeft, DollarSign, Calendar, FileText, Plus } from 'lucide-react';
+import { ArrowLeft, DollarSign, Calendar, FileText, Plus, Share2 } from 'lucide-react';
 import TaskBoard from '../tasks/TaskBoard';
 import clsx from 'clsx';
 import DocumentList from '../../components/documents/DocumentList';
+import ShareModal from '../../components/crm/ShareModal';
 
 
 const ContractDetail: React.FC = () => {
@@ -14,6 +15,7 @@ const ContractDetail: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'tasks' | 'meetings' | 'documents'>('tasks');
     const [meetings, setMeetings] = useState<any[]>([]);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     useEffect(() => {
         fetchContract();
@@ -113,6 +115,13 @@ const ContractDetail: React.FC = () => {
                             <span className="sm:hidden">PDF</span>
                         </a>
                     )}
+                    <button
+                        onClick={() => setIsShareModalOpen(true)}
+                        className="flex-1 md:flex-none justify-center flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-indigo-700 hover:bg-gray-50"
+                    >
+                        <Share2 size={16} />
+                        Partager
+                    </button>
                     <button
                         onClick={() => navigate(`/crm/contracts/${id}/edit`)}
                         className="flex-1 md:flex-none justify-center flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -224,6 +233,12 @@ const ContractDetail: React.FC = () => {
                     </div>
                 )}
             </div>
+            {/* Share Modal */}
+            <ShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                contractId={id}
+            />
         </div>
     );
 };

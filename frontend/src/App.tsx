@@ -17,6 +17,7 @@ import DocumentManager from './pages/documents/DocumentManager';
 import MeetingTemplates from './pages/crm/MeetingTemplates';
 
 import DatabaseView from './components/database/DatabaseView';
+import SharedView from './pages/guest/SharedView';
 import Home from './pages/Home';
 
 import Profile from './pages/Profile';
@@ -38,6 +39,7 @@ const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/shared/:token" element={<SharedView />} />
       <Route path="/" element={
         <ProtectedRoute>
           <Layout />
