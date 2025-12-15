@@ -27,6 +27,7 @@ class TaskViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
             tasks = tasks.filter(company_id=company_id)
 
         kanban_data = {
+            'draft': TaskSerializer(tasks.filter(status='draft'), many=True).data,
             'todo': TaskSerializer(tasks.filter(status='todo'), many=True).data,
             'in_progress': TaskSerializer(tasks.filter(status='in_progress'), many=True).data,
             'done': TaskSerializer(tasks.filter(status='done'), many=True).data,

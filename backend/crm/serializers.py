@@ -84,7 +84,7 @@ class SharedLinkSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = SharedLink
-        fields = '__all__'
+        fields = ['id', 'token', 'contract', 'company', 'allow_tasks', 'allow_task_creation', 'allow_meetings', 'allow_documents', 'created_at', 'expires_at', 'views_count', 'url']
         read_only_fields = ['token', 'views_count', 'created_by']
 
     def get_url(self, obj):

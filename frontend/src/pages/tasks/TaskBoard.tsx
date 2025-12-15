@@ -10,7 +10,7 @@ interface TaskBoardProps {
 }
 
 const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
-    const [tasks, setTasks] = useState<any>({ todo: [], in_progress: [], done: [] });
+    const [tasks, setTasks] = useState<any>({ draft: [], todo: [], in_progress: [], done: [] });
     const [viewMode, setViewMode] = useState<'kanban' | 'calendar'>('kanban');
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
@@ -158,7 +158,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
     );
 
     // Flatten tasks for calendar view
-    const allTasks = [...(tasks.todo || []), ...(tasks.in_progress || []), ...(tasks.done || [])];
+    const allTasks = [...(tasks.draft || []), ...(tasks.todo || []), ...(tasks.in_progress || []), ...(tasks.done || [])];
 
     return (
         <div className="p-4 md:p-8 h-full flex flex-col bg-white">
@@ -188,6 +188,9 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
 
             {viewMode === 'kanban' ? (
                 <div className="flex flex-1 overflow-x-auto pb-4 -mx-2 px-2 snap-x snap-mandatory">
+                    {tasks.draft?.length > 0 && (
+                        <Column title="Brouillon" status="draft" items={tasks.draft || []} />
+                    )}
                     <Column title="À faire" status="todo" items={tasks.todo || []} />
                     <Column title="En cours" status="in_progress" items={tasks.in_progress || []} />
                     <Column title="Terminé" status="done" items={tasks.done || []} />

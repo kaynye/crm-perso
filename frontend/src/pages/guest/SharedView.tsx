@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import GuestLayout from '../../components/GuestLayout';
-import { Calendar as CalendarIcon, Layout, X, Clock, AlignLeft, CheckCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Layout, X, Clock, AlignLeft, CheckCircle, Plus } from 'lucide-react';
 import edjsHTML from 'editorjs-html';
 
 // Custom Parsers for EditorJS
@@ -49,6 +49,7 @@ interface Config {
     company_name: string;
     permissions: {
         allow_tasks: boolean;
+        allow_task_creation: boolean;
         allow_meetings: boolean;
         allow_documents: boolean;
     };
@@ -111,7 +112,7 @@ const SharedView: React.FC = () => {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'tasks':
-                return <GuestTasks token={token!} />;
+                return <GuestTasks token={token!} canPropose={config?.permissions.allow_task_creation || false} />;
             case 'meetings':
                 return <GuestMeetings token={token!} />;
             case 'documents':
@@ -329,13 +330,95 @@ const TaskDetailModal: React.FC<{ task: any, onClose: () => void }> = ({ task, o
     );
 };
 
-const GuestTasks: React.FC<{ token: string }> = ({ token }) => {
+const TaskProposeModal: React.FC<{ token: string, onClose: () => void, onSuccess: () => void }> = ({ token, onClose, onSuccess }) => {
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [priority, setPriority] = useState('medium');
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmitting(true);
+        try {
+            await axios.post(`${BASE_URL}/crm/public/tasks/?token=${token}`, {
+                title,
+                description,
+                priority
+            });
+            onSuccess();
+            onClose();
+        } catch (err) {
+            console.error(err);
+            alert("Erreur lors de la création de la tâche.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <h3 className="text-lg font-semibold text-gray-900">Proposer une Tâche</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={20} /></button>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Titre</label>
+                        <input
+                            required
+                            value={title}
+                            onChange={e => setTitle(e.target.value)}
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            placeholder="Ex: Réviser le contrat..."
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Priorité</label>
+                        <select
+                            value={priority}
+                            onChange={e => setPriority(e.target.value)}
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        >
+                            <option value="low">Basse</option>
+                            <option value="medium">Moyenne</option>
+                            <option value="high">Haute</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea
+                            rows={4}
+                            value={description}
+                            onChange={e => setDescription(e.target.value)}
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            placeholder="Détails de la tâche..."
+                        />
+                    </div>
+                    <div className="flex justify-end pt-2">
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                            {submitting ? 'Envoi...' : 'Soumettre'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const GuestTasks: React.FC<{ token: string, canPropose: boolean }> = ({ token, canPropose }) => {
     const [tasks, setTasks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState<'board' | 'calendar'>('board');
     const [selectedTask, setSelectedTask] = useState<any>(null);
+    const [showProposeModal, setShowProposeModal] = useState(false);
 
-    useEffect(() => {
+    const fetchTasks = () => {
+        setLoading(true);
         axios.get(`${BASE_URL}/crm/public/tasks/?token=${token}`)
             .then(res => {
                 if (Array.isArray(res.data)) setTasks(res.data);
@@ -344,36 +427,56 @@ const GuestTasks: React.FC<{ token: string }> = ({ token }) => {
             })
             .catch(console.error)
             .finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        fetchTasks();
     }, [token]);
 
     if (loading) return <div className="p-4 text-center text-gray-500">Chargement des tâches...</div>;
 
     // Group by status
+    const draft = tasks.filter(t => t.status === 'draft');
     const todo = tasks.filter(t => t.status === 'todo');
     const inProgress = tasks.filter(t => t.status === 'in_progress');
     const done = tasks.filter(t => t.status === 'done');
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-end gap-2">
-                <button
-                    onClick={() => setView('board')}
-                    className={`p-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${view === 'board' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}
-                >
-                    <Layout size={18} /> Tableau
-                </button>
-                <button
-                    onClick={() => setView('calendar')}
-                    className={`p-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${view === 'calendar' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}
-                >
-                    <CalendarIcon size={18} /> Calendrier
-                </button>
+            <div className="flex justify-between items-center">
+                {canPropose && (
+                    <button
+                        onClick={() => setShowProposeModal(true)}
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 flex items-center gap-2 shadow-sm transition-all hover:shadow-md"
+                    >
+                        <Plus size={16} /> Proposer une tâche
+                    </button>
+                )}
+                {!canPropose && <div></div>} {/* Spacer */}
+
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={() => setView('board')}
+                        className={`p-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${view === 'board' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}
+                    >
+                        <Layout size={18} /> Tableau
+                    </button>
+                    <button
+                        onClick={() => setView('calendar')}
+                        className={`p-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${view === 'calendar' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}
+                    >
+                        <CalendarIcon size={18} /> Calendrier
+                    </button>
+                </div>
             </div>
 
             {view === 'calendar' ? (
                 <GuestTaskCalendar tasks={tasks} onTaskClick={setSelectedTask} />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className={`grid gap-6 ${draft.length > 0 ? 'grid-cols-1 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-3'}`}>
+                    {draft.length > 0 && (
+                        <KanbanColumn title="Brouillon" items={draft} color="bg-gray-50 border border-dashed border-gray-300" dotColor="bg-gray-300" onTaskClick={setSelectedTask} />
+                    )}
                     <KanbanColumn title="A Faire" items={todo} color="bg-gray-100" dotColor="bg-gray-400" onTaskClick={setSelectedTask} />
                     <KanbanColumn title="En Cours" items={inProgress} color="bg-blue-50" dotColor="bg-blue-400" onTaskClick={setSelectedTask} />
                     <KanbanColumn title="Terminé" items={done} color="bg-green-50" dotColor="bg-green-400" onTaskClick={setSelectedTask} />
@@ -381,6 +484,7 @@ const GuestTasks: React.FC<{ token: string }> = ({ token }) => {
             )}
 
             {selectedTask && <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} />}
+            {showProposeModal && <TaskProposeModal token={token} onClose={() => setShowProposeModal(false)} onSuccess={fetchTasks} />}
         </div>
     );
 };

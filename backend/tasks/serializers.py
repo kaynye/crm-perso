@@ -29,11 +29,15 @@ class TaskSerializer(serializers.ModelSerializer):
         read_only_fields = ['organization']
 
     def validate(self, data):
-        validate_cross_organization_reference(
-            self.context['request'].user,
-            company=data.get('company'),
-            contract=data.get('contract'),
-            contact=data.get('contact'),
-            page=data.get('page')
-        )
+        # Skip this validation for public access (anonymous users)
+        # Security is handled by the PublicTaskViewSet permissions and scope logic
+        user = self.context['request'].user
+        if user.is_authenticated:
+            validate_cross_organization_reference(
+                user,
+                company=data.get('company'),
+                contract=data.get('contract'),
+                contact=data.get('contact'),
+                page=data.get('page')
+            )
         return data

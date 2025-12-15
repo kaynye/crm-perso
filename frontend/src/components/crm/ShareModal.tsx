@@ -15,6 +15,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
 
     // New Link State
     const [allowTasks, setAllowTasks] = useState(true);
+    const [allowTaskCreation, setAllowTaskCreation] = useState(false);
     const [allowMeetings, setAllowMeetings] = useState(true);
     const [allowDocuments, setAllowDocuments] = useState(true);
 
@@ -45,6 +46,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
                 contract: contractId,
                 company: companyId,
                 allow_tasks: allowTasks,
+                allow_task_creation: allowTaskCreation,
                 allow_meetings: allowMeetings,
                 allow_documents: allowDocuments
             };
@@ -80,16 +82,31 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
                     {/* Create New Section */}
                     <div className="bg-indigo-50/50 rounded-lg p-4 mb-6 border border-indigo-100">
                         <h4 className="text-sm font-medium text-indigo-900 mb-3">Generate new public link</h4>
-                        <div className="flex gap-4 mb-4">
-                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
-                                <input type="checkbox" checked={allowTasks} onChange={e => setAllowTasks(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                                Tasks
-                            </label>
-                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                        <div className="flex flex-col gap-3 mb-4">
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none font-medium">
+                                    <input type="checkbox" checked={allowTasks} onChange={e => setAllowTasks(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
+                                    Tasks
+                                </label>
+                                {allowTasks && (
+                                    <div className="ml-6 animate-fade-in-down">
+                                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                checked={allowTaskCreation}
+                                                onChange={e => setAllowTaskCreation(e.target.checked)}
+                                                className="rounded text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            Allow guests to propose tasks
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none font-medium">
                                 <input type="checkbox" checked={allowMeetings} onChange={e => setAllowMeetings(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
                                 Meetings
                             </label>
-                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none font-medium">
                                 <input type="checkbox" checked={allowDocuments} onChange={e => setAllowDocuments(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
                                 Documents
                             </label>
@@ -109,6 +126,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
                                 <div className="flex-1 min-w-0 mr-4">
                                     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                                         {link.allow_tasks && <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">Tasks</span>}
+                                        {link.allow_task_creation && <span className="bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">Can Propose</span>}
                                         {link.allow_meetings && <span className="bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-100">Meetings</span>}
                                         {link.allow_documents && <span className="bg-yellow-50 text-yellow-600 px-1.5 py-0.5 rounded border border-yellow-100">Docs</span>}
                                     </div>

@@ -117,6 +117,7 @@ class SharedLink(models.Model):
     
     # Permissions
     allow_tasks = models.BooleanField(default=True)
+    allow_task_creation = models.BooleanField(default=False)
     allow_meetings = models.BooleanField(default=True)
     allow_documents = models.BooleanField(default=True)
     

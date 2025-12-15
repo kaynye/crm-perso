@@ -37,6 +37,7 @@ class PublicSharedLinkView(views.APIView):
             "type": "contract" if link.contract else "company",
             "permissions": {
                 "allow_tasks": link.allow_tasks,
+                "allow_task_creation": link.allow_task_creation,
                 "allow_meetings": link.allow_meetings,
                 "allow_documents": link.allow_documents,
             },
@@ -45,9 +46,10 @@ class PublicSharedLinkView(views.APIView):
         }
         return Response(data)
 
-class PublicTaskViewSet(viewsets.ReadOnlyModelViewSet):
+class PublicTaskViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     serializer_class = TaskSerializer
+    http_method_names = ['get', 'post', 'head', 'options']
     
     def get_queryset(self):
         token = self.request.query_params.get('token')
@@ -64,6 +66,28 @@ class PublicTaskViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(company=link.company) | Q(contract__company=link.company)
             ).distinct()
         return Task.objects.none()
+
+    def perform_create(self, serializer):
+        token = self.request.query_params.get('token')
+        link = get_link_or_403(token)
+        
+        if not link.allow_tasks or not link.allow_task_creation:
+            raise exceptions.PermissionDenied("Task creation not allowed")
+
+        # Force status to draft
+        kwargs = {
+            'status': 'draft', 
+            'organization': link.company.organization if link.company else link.contract.organization,
+        }
+        
+        # Link to appropriate scope
+        if link.contract:
+            kwargs['contract'] = link.contract
+            kwargs['company'] = link.contract.company
+        elif link.company:
+            kwargs['company'] = link.company
+            
+        serializer.save(**kwargs)
 
 class PublicMeetingViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]

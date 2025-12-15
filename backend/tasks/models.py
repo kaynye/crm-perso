@@ -4,6 +4,7 @@ import uuid
 
 class Task(models.Model):
     STATUS_CHOICES = (
+        ('draft', 'Draft'),
         ('todo', 'To Do'),
         ('in_progress', 'In Progress'),
         ('done', 'Done'),

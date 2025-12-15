@@ -119,6 +119,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
                             value={task.status}
                             onChange={(e) => handleSaveField('status', e.target.value)}
                         >
+                            <option value="draft">Brouillon</option>
                             <option value="todo">À faire</option>
                             <option value="in_progress">En cours</option>
                             <option value="done">Terminé</option>
