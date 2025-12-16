@@ -66,6 +66,7 @@ class TaskTools:
         - Calculate specific "due_date" (YYYY-MM-DD) for each task based on the Current Date.
         - IMPORTANT: The 'title' and 'description' fields MUST be in the SAME LANGUAGE as the Input Text (default to French if unclear).
         - Status MUST be 'todo' UNLESS the text explicitly states the task is currently 'in progress'. Default to 'todo'.
+        - Priority MUST be 'medium' UNLESS the text explicitly uses words like "Urgent", "Important", "High priority", "ASAP". Default to 'medium'.
         
         Input Text:
         {text}
@@ -97,10 +98,25 @@ class TaskTools:
 
             tasks_data = json.loads(json_str)
         except (json.JSONDecodeError, AttributeError):
-            # 2. Fallback to AST literal_eval
+            # 2. Fallback to AST literal_eval with cleanup
             import ast
+            
+            # Prepare string for AST: 
+            # - Replace JSON booleans/null with Python equivalents
+            # - Remove trailing commas
+            
+            # Use the best json_str we found
+            clean_str = json_str if 'json_str' in locals() else response_text
+            
+            # Replace keywords
+            clean_str = clean_str.replace("true", "True").replace("false", "False").replace("null", "None")
+            
+            # Remove trailing commas in arrays/objects: , ] -> ] and , } -> }
+            clean_str = re.sub(r',\s*\]', ']', clean_str)
+            clean_str = re.sub(r',\s*\}', '}', clean_str)
+            
             try:
-                tasks_data = ast.literal_eval(json_str) if 'json_str' in locals() else ast.literal_eval(response_text)
+                tasks_data = ast.literal_eval(clean_str)
             except:
                 pass
 

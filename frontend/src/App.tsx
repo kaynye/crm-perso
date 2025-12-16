@@ -74,11 +74,17 @@ const AppRoutes: React.FC = () => {
   );
 }
 
+import { ChatProvider } from './context/ChatContext';
+
+// ... (existing imports)
+
 const App: React.FC = () => {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <ChatProvider>
+          <AppRoutes />
+        </ChatProvider>
       </AuthProvider>
     </Router>
   );
