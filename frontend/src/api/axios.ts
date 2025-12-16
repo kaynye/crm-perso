@@ -30,6 +30,11 @@ api.interceptors.response.use(
                 return Promise.reject(error);
             }
 
+            // Skip redirect for public shared links (password protection)
+            if (originalRequest.url?.includes('/crm/public/')) {
+                return Promise.reject(error);
+            }
+
             originalRequest._retry = true;
             const refreshToken = localStorage.getItem('refresh_token');
             if (refreshToken) {

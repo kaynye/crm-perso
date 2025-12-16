@@ -21,6 +21,54 @@ interface Config {
     };
 }
 
+interface GuestPasswordPromptProps {
+    onSubmit: (password: string) => void;
+    error?: string;
+}
+
+const GuestPasswordPrompt: React.FC<GuestPasswordPromptProps> = ({ onSubmit, error }) => {
+    const [password, setPassword] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSubmit(password);
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+            <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+                <div className="text-center mb-6">
+                    <div className="bg-indigo-100 p-3 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 text-indigo-600">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900">Accès Protégé</h2>
+                    <p className="text-gray-500 mt-2">Ce lien est protégé par un mot de passe.</p>
+                </div>
+
+                {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm text-center">{error}</div>}
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+                        <input
+                            type="password"
+                            required
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3"
+                            placeholder="Entrez le mot de passe"
+                            autoFocus
+                        />
+                    </div>
+                    <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-sm">
+                        Accéder
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 const SharedView: React.FC = () => {
     const { token } = useParams<{ token: string }>();
     const [config, setConfig] = useState<Config | null>(null);
@@ -28,30 +76,69 @@ const SharedView: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<string>('');
 
-    useEffect(() => {
-        const fetchConfig = async () => {
-            try {
-                const response = await api.get(`/crm/public/config/?token=${token}`);
-                setConfig(response.data);
+    // Auth State
+    const [authPassword, setAuthPassword] = useState<string | null>(null);
+    const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+    const [authError, setAuthError] = useState<string | null>(null);
 
-                // Set default active tab
-                const perms = response.data.permissions;
+    const fetchConfig = async (password?: string) => {
+        setLoading(true);
+        try {
+            const headers: any = {};
+            if (password) {
+                headers['X-Shared-Link-Password'] = password;
+            }
+
+            const response = await api.get(`/crm/public/config/?token=${token}`, { headers });
+
+            // Check if backend returned "Password Required" with 200 OK
+            if (response.data.code === 'password_required' || response.data.code === 'invalid_password') {
+                setShowPasswordPrompt(true);
+                if (password) setAuthError("Mot de passe incorrect");
+                setLoading(false);
+                return;
+            }
+
+            setConfig(response.data);
+            setShowPasswordPrompt(false);
+            setAuthError(null);
+            if (password) setAuthPassword(password);
+
+            // Set default active tab
+            const perms = response.data.permissions;
+            if (!activeTab && perms) {
                 if (perms.allow_tasks) setActiveTab('tasks');
                 else if (perms.allow_meetings) setActiveTab('meetings');
                 else if (perms.allow_documents) setActiveTab('documents');
-
-            } catch (err) {
-                console.error(err);
-                setError('Lien invalide ou expiré.');
-            } finally {
-                setLoading(false);
             }
-        };
 
+        } catch (err: any) {
+            console.error(err);
+            if (err.response && err.response.status === 401) {
+                const code = err.response.data?.code;
+                if (code === 'password_required' || code === 'invalid_password') {
+                    setShowPasswordPrompt(true);
+                    if (password) setAuthError("Mot de passe incorrect");
+                } else {
+                    setError('Accès non autorisé.');
+                }
+            } else {
+                setError('Lien invalide ou expiré.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         if (token) {
             fetchConfig();
         }
     }, [token]);
+
+    const handlePasswordSubmit = (password: string) => {
+        fetchConfig(password);
+    };
 
     if (loading) {
         return (
@@ -59,6 +146,10 @@ const SharedView: React.FC = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             </div>
         );
+    }
+
+    if (showPasswordPrompt) {
+        return <GuestPasswordPrompt onSubmit={handlePasswordSubmit} error={authError || undefined} />;
     }
 
     if (error || !config) {
@@ -76,11 +167,11 @@ const SharedView: React.FC = () => {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'tasks':
-                return <GuestTasks token={token!} canPropose={config?.permissions.allow_task_creation || false} />;
+                return <GuestTasks token={token!} canPropose={config?.permissions.allow_task_creation || false} authPassword={authPassword} />;
             case 'meetings':
-                return <GuestMeetings token={token!} canPropose={config?.permissions.allow_meeting_creation || false} />;
+                return <GuestMeetings token={token!} canPropose={config?.permissions.allow_meeting_creation || false} authPassword={authPassword} />;
             case 'documents':
-                return <GuestDocuments token={token!} canUpload={config?.permissions.allow_document_upload || false} />;
+                return <GuestDocuments token={token!} canUpload={config?.permissions.allow_document_upload || false} authPassword={authPassword} />;
             default:
                 return <div>Sélectionnez un onglet</div>;
         }

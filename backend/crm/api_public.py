@@ -10,7 +10,25 @@ from .serializers import DocumentSerializer
 from .serializers import MeetingTemplateSerializer
 from tasks.serializers import TaskSerializer
 
-def get_link_or_403(token):
+def validate_link_access(link, request):
+    # Check expiry
+    if link.expires_at and link.expires_at < timezone.now():
+        raise exceptions.AuthenticationFailed("Link expired")
+        
+    # Check Password
+    if link.password:
+        auth_header = request.headers.get('X-Shared-Link-Password')
+        from django.contrib.auth.hashers import check_password
+        
+        if not auth_header:
+            raise exceptions.AuthenticationFailed(detail={"code": "password_required", "message": "Password required"}, code="password_required")
+            
+        if not check_password(auth_header, link.password):
+             raise exceptions.AuthenticationFailed(detail={"code": "invalid_password", "message": "Invalid password"}, code="invalid_password")
+
+    return link
+
+def get_link_or_403(token, request=None):
     if not token:
         raise exceptions.AuthenticationFailed("Token required")
     try:
@@ -18,8 +36,12 @@ def get_link_or_403(token):
     except SharedLink.DoesNotExist:
         raise exceptions.AuthenticationFailed("Invalid token")
     
-    if link.expires_at and link.expires_at < timezone.now():
-        raise exceptions.AuthenticationFailed("Link expired")
+    # If request is provided, validate access (expiry + password)
+    if request:
+        validate_link_access(link, request)
+    # Historic fallback (just check expiry)
+    elif link.expires_at and link.expires_at < timezone.now():
+         raise exceptions.AuthenticationFailed("Link expired")
         
     return link
 
@@ -28,9 +50,16 @@ class PublicSharedLinkView(views.APIView):
     
     def get(self, request):
         token = request.query_params.get('token')
-        link = get_link_or_403(token)
+        try:
+            link = get_link_or_403(token, request)
+        except exceptions.AuthenticationFailed as e:
+            # Return 200 OK with specific payload to avoid console errors
+            # Only do this for 'config' endpoint logic if we want to prompt UI
+            if e.detail and isinstance(e.detail, dict) and e.detail.get('code') in ['password_required', 'invalid_password']:
+                return Response(e.detail, status=200)
+            raise e
         
-        # Optional: Increment view count (beware of concurrent database locks, keeping it simple for now)
+        # Optional: Increment view count
         # link.views_count += 1
         # link.save(update_fields=['views_count'])
         

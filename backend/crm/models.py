@@ -110,6 +110,7 @@ class MeetingTemplate(models.Model):
 class SharedLink(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     token = models.CharField(max_length=64, unique=True, db_index=True, editable=False)
+    password = models.CharField(max_length=128, blank=True, null=True, help_text="Hashed password for guest access")
     
     # Scope (can be linked to a Company or a specific Project/Contract)
     company = models.ForeignKey(Company, null=True, blank=True, on_delete=models.CASCADE, related_name='shared_links')

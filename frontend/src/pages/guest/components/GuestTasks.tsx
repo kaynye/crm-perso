@@ -5,7 +5,7 @@ import GuestTaskCalendar from './GuestTaskCalendar';
 import TaskDetailModal from './TaskDetailModal';
 import TaskProposeModal from './TaskProposeModal';
 
-const GuestTasks: React.FC<{ token: string, canPropose: boolean }> = ({ token, canPropose }) => {
+const GuestTasks: React.FC<{ token: string, canPropose: boolean, authPassword?: string | null }> = ({ token, canPropose, authPassword }) => {
     const [tasks, setTasks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState<'board' | 'calendar'>('board');
@@ -14,7 +14,10 @@ const GuestTasks: React.FC<{ token: string, canPropose: boolean }> = ({ token, c
 
     const fetchTasks = () => {
         setLoading(true);
-        api.get(`/crm/public/tasks/?token=${token}`)
+        const headers: any = {};
+        if (authPassword) headers['X-Shared-Link-Password'] = authPassword;
+
+        api.get(`/crm/public/tasks/?token=${token}`, { headers })
             .then(res => {
                 if (Array.isArray(res.data)) setTasks(res.data);
                 else if (res.data.results) setTasks(res.data.results);
@@ -79,7 +82,7 @@ const GuestTasks: React.FC<{ token: string, canPropose: boolean }> = ({ token, c
             )}
 
             {selectedTask && <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} />}
-            {showProposeModal && <TaskProposeModal token={token} onClose={() => setShowProposeModal(false)} onSuccess={fetchTasks} />}
+            {showProposeModal && <TaskProposeModal token={token} authPassword={authPassword} onClose={() => setShowProposeModal(false)} onSuccess={fetchTasks} />}
         </div>
     );
 };

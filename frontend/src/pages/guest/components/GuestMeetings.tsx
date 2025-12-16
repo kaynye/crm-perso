@@ -48,7 +48,7 @@ const MeetingDetailModal: React.FC<{ meeting: any, onClose: () => void }> = ({ m
     );
 };
 
-const MeetingProposeModal: React.FC<{ token: string, onClose: () => void, onSuccess: () => void }> = ({ token, onClose, onSuccess }) => {
+const MeetingProposeModal: React.FC<{ token: string, authPassword?: string | null, onClose: () => void, onSuccess: () => void }> = ({ token, authPassword, onClose, onSuccess }) => {
     const [title, setTitle] = useState('');
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
@@ -101,7 +101,10 @@ const MeetingProposeModal: React.FC<{ token: string, onClose: () => void, onSucc
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const res = await api.get(`/crm/public/meeting-templates/?token=${token}`);
+                const headers: any = {};
+                if (authPassword) headers['X-Shared-Link-Password'] = authPassword;
+
+                const res = await api.get(`/crm/public/meeting-templates/?token=${token}`, { headers });
                 if (Array.isArray(res.data)) setTemplates(res.data);
                 else if (res.data.results) setTemplates(res.data.results);
             } catch (err) {
@@ -109,7 +112,7 @@ const MeetingProposeModal: React.FC<{ token: string, onClose: () => void, onSucc
             }
         };
         fetchTemplates();
-    }, [token]);
+    }, [token, authPassword]);
 
     const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const tplId = e.target.value;
@@ -134,12 +137,15 @@ const MeetingProposeModal: React.FC<{ token: string, onClose: () => void, onSucc
         setSubmitting(true);
         try {
             const savedData = await editorRef.current?.save();
+            const headers: any = {};
+            if (authPassword) headers['X-Shared-Link-Password'] = authPassword;
+
             await api.post(`/crm/public/meetings/?token=${token}`, {
                 title,
                 date: `${date}T${time}:00`,
                 type,
                 notes: JSON.stringify(savedData)
-            });
+            }, { headers });
             onSuccess();
             onClose();
         } catch (err) {
@@ -217,7 +223,7 @@ const MeetingProposeModal: React.FC<{ token: string, onClose: () => void, onSucc
     );
 };
 
-const GuestMeetings: React.FC<{ token: string, canPropose: boolean }> = ({ token, canPropose }) => {
+const GuestMeetings: React.FC<{ token: string, canPropose: boolean, authPassword?: string | null }> = ({ token, canPropose, authPassword }) => {
     const [meetings, setMeetings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -225,7 +231,10 @@ const GuestMeetings: React.FC<{ token: string, canPropose: boolean }> = ({ token
 
     const fetchMeetings = () => {
         setLoading(true);
-        api.get(`/crm/public/meetings/?token=${token}`)
+        const headers: any = {};
+        if (authPassword) headers['X-Shared-Link-Password'] = authPassword;
+
+        api.get(`/crm/public/meetings/?token=${token}`, { headers })
             .then(res => {
                 if (Array.isArray(res.data)) setMeetings(res.data);
                 else if (res.data.results) setMeetings(res.data.results);
@@ -237,7 +246,7 @@ const GuestMeetings: React.FC<{ token: string, canPropose: boolean }> = ({ token
 
     useEffect(() => {
         fetchMeetings();
-    }, [token]);
+    }, [token, authPassword]);
 
     if (loading) return <div className="p-4 text-center text-gray-500">Chargement des réunions...</div>;
 
@@ -287,7 +296,7 @@ const GuestMeetings: React.FC<{ token: string, canPropose: boolean }> = ({ token
                 {meetings.length === 0 && <div className="col-span-full text-center text-gray-400 py-10">Aucune réunion trouvée.</div>}
             </div>
 
-            {showModal && <MeetingProposeModal token={token} onClose={() => setShowModal(false)} onSuccess={fetchMeetings} />}
+            {showModal && <MeetingProposeModal token={token} authPassword={authPassword} onClose={() => setShowModal(false)} onSuccess={fetchMeetings} />}
             {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} />}
         </div>
     );

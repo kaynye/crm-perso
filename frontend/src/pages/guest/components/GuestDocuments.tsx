@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Download, Plus, X, UploadCloud } from 'lucide-react';
 import api from '../../../api/axios';
 
-const DocumentUploadModal: React.FC<{ token: string, onClose: () => void, onSuccess: () => void }> = ({ token, onClose, onSuccess }) => {
+const DocumentUploadModal: React.FC<{ token: string, authPassword?: string | null, onClose: () => void, onSuccess: () => void }> = ({ token, authPassword, onClose, onSuccess }) => {
     const [file, setFile] = useState<File | null>(null);
     const [title, setTitle] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -28,9 +28,10 @@ const DocumentUploadModal: React.FC<{ token: string, onClose: () => void, onSucc
         formData.append('name', title);
 
         try {
-            await api.post(`/crm/public/documents/?token=${token}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const headers: any = { 'Content-Type': 'multipart/form-data' };
+            if (authPassword) headers['X-Shared-Link-Password'] = authPassword;
+
+            await api.post(`/crm/public/documents/?token=${token}`, formData, { headers });
             onSuccess();
             onClose();
         } catch (err) {
@@ -99,7 +100,7 @@ const DocumentPreviewModal: React.FC<{ fileUrl: string, fileName: string, onClos
     );
 };
 
-const GuestDocuments: React.FC<{ token: string, canUpload: boolean }> = ({ token, canUpload }) => {
+const GuestDocuments: React.FC<{ token: string, canUpload: boolean, authPassword?: string | null }> = ({ token, canUpload, authPassword }) => {
     const [documents, setDocuments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -107,7 +108,10 @@ const GuestDocuments: React.FC<{ token: string, canUpload: boolean }> = ({ token
 
     const fetchDocuments = () => {
         setLoading(true);
-        api.get(`/crm/public/documents/?token=${token}`)
+        const headers: any = {};
+        if (authPassword) headers['X-Shared-Link-Password'] = authPassword;
+
+        api.get(`/crm/public/documents/?token=${token}`, { headers })
             .then(res => {
                 if (Array.isArray(res.data)) setDocuments(res.data);
                 else if (res.data.results) setDocuments(res.data.results);
@@ -119,7 +123,7 @@ const GuestDocuments: React.FC<{ token: string, canUpload: boolean }> = ({ token
 
     useEffect(() => {
         fetchDocuments();
-    }, [token]);
+    }, [token, authPassword]);
 
     const handlePreview = (doc: any) => {
         const ext = doc.file.split('.').pop().toLowerCase();
@@ -179,7 +183,7 @@ const GuestDocuments: React.FC<{ token: string, canUpload: boolean }> = ({ token
                 {documents.length === 0 && <div className="col-span-full text-center text-gray-400 py-10">Aucun document trouvé.</div>}
             </div>
 
-            {showModal && <DocumentUploadModal token={token} onClose={() => setShowModal(false)} onSuccess={fetchDocuments} />}
+            {showModal && <DocumentUploadModal token={token} authPassword={authPassword} onClose={() => setShowModal(false)} onSuccess={fetchDocuments} />}
             {previewDoc && <DocumentPreviewModal fileUrl={previewDoc.url} fileName={previewDoc.name} onClose={() => setPreviewDoc(null)} />}
         </div>
     );

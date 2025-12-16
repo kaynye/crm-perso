@@ -164,6 +164,12 @@ if not DEBUG:
         "https://crm-perso.vercel.app",
     ]
 
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'x-shared-link-password',
+]
+
 # AI Configuration
 AI_CONF = {
     'PROVIDER': os.getenv('AI_PROVIDER', 'openai'), # 'openai', 'gemini', 'custom'

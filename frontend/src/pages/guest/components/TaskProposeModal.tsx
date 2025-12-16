@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import api from '../../../api/axios';
 import Editor from '../../../components/Editor';
 import type { OutputData } from '@editorjs/editorjs';
 
-const TaskProposeModal: React.FC<{ token: string, onClose: () => void, onSuccess: () => void }> = ({ token, onClose, onSuccess }) => {
+const TaskProposeModal: React.FC<{ token: string, authPassword?: string | null, onClose: () => void, onSuccess: () => void }> = ({ token, authPassword, onClose, onSuccess }) => {
     const [title, setTitle] = useState('');
     const [editorData, setEditorData] = useState<OutputData>({ blocks: [] });
     const [priority, setPriority] = useState('medium');
@@ -14,11 +15,14 @@ const TaskProposeModal: React.FC<{ token: string, onClose: () => void, onSuccess
         e.preventDefault();
         setSubmitting(true);
         try {
+            const headers: any = {};
+            if (authPassword) headers['X-Shared-Link-Password'] = authPassword;
+
             await api.post(`/crm/public/tasks/?token=${token}`, {
                 title,
                 description: JSON.stringify(editorData),
                 priority
-            });
+            }, { headers });
             onSuccess();
             onClose();
         } catch (err) {

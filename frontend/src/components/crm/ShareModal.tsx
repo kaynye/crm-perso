@@ -20,6 +20,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
     const [allowMeetingCreation, setAllowMeetingCreation] = useState(false);
     const [allowDocuments, setAllowDocuments] = useState(true);
     const [allowDocumentUpload, setAllowDocumentUpload] = useState(false);
+    const [password, setPassword] = useState('');
 
     useEffect(() => {
         if (isOpen) {
@@ -52,10 +53,12 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
                 allow_meetings: allowMeetings,
                 allow_meeting_creation: allowMeetingCreation,
                 allow_documents: allowDocuments,
-                allow_document_upload: allowDocumentUpload
+                allow_document_upload: allowDocumentUpload,
+                password: password || undefined
             };
             await api.post('/crm/shared-links/', payload);
             fetchLinks();
+            setPassword(''); // Reset password field
         } catch (err) {
             console.error(err);
             alert("Failed to generate link");
@@ -145,75 +148,87 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
                                 )}
                             </div>
                         </div>
-                        <button onClick={createLink} className="w-full py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 flex items-center justify-center gap-2 transition-colors shadow-sm">
-                            <Plus size={16} /> Generate Link
-                        </button>
+                        <div className="space-y-2 mt-4 pt-4 border-t border-gray-100">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe (optionnel)</label>
+                            <input
+                                type="text"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                placeholder="Protéger par mot de passe"
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            />
+                            <p className="text-xs text-gray-500">Si défini, le mot de passe sera requis pour accéder au lien.</p>
+                        </div>
                     </div>
+                    <button onClick={createLink} className="w-full py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 flex items-center justify-center gap-2 transition-colors shadow-sm">
+                        <Plus size={16} /> Generate Link
+                    </button>
+                </div>
 
-                    {/* Existing Links */}
-                    <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center justify-between">
-                        Active Links <span className="text-xs font-normal text-gray-500">{links.length} links</span>
-                    </h4>
-                    <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                        {links.map(link => (
-                            <div key={link.id} className="border border-gray-200 rounded-lg p-3 flex items-center justify-between bg-white hover:border-indigo-300 transition-colors">
-                                <div className="flex-1 min-w-0 mr-4">
-                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
-                                        {link.allow_tasks && <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">Tasks</span>}
-                                        {link.allow_task_creation && <span className="bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">Can Propose</span>}
-                                        {link.allow_meetings && <span className="bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-100">Meetings</span>}
-                                        {link.allow_meeting_creation && <span className="bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">Can Propose</span>}
-                                        {link.allow_documents && <span className="bg-yellow-50 text-yellow-600 px-1.5 py-0.5 rounded border border-yellow-100">Docs</span>}
-                                        {link.allow_document_upload && <span className="bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">Can Upload</span>}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            readOnly
-                                            value={`${window.location.origin}/shared/${link.token}`}
-                                            className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded px-2 py-1 w-full truncate focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                            onClick={(e) => e.currentTarget.select()}
-                                        />
-                                    </div>
+                {/* Existing Links */}
+                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center justify-between">
+                    Active Links <span className="text-xs font-normal text-gray-500">{links.length} links</span>
+                </h4>
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                    {links.map(link => (
+                        <div key={link.id} className="border border-gray-200 rounded-lg p-3 flex items-center justify-between bg-white hover:border-indigo-300 transition-colors">
+                            <div className="flex-1 min-w-0 mr-4">
+                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
+                                    {link.allow_tasks && <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">Tasks</span>}
+                                    {link.allow_task_creation && <span className="bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">Can Propose</span>}
+                                    {link.allow_meetings && <span className="bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-100">Meetings</span>}
+                                    {link.allow_meeting_creation && <span className="bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">Can Propose</span>}
+                                    {link.allow_documents && <span className="bg-yellow-50 text-yellow-600 px-1.5 py-0.5 rounded border border-yellow-100">Docs</span>}
+                                    {link.allow_document_upload && <span className="bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">Can Upload</span>}
                                 </div>
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(`${window.location.origin}/shared/${link.token}`);
-                                        }}
-                                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                        title="Copy to clipboard"
-                                    >
-                                        <Copy size={16} />
-                                    </button>
-                                    <a
-                                        href={`/shared/${link.token}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                        title="Open in new tab"
-                                    >
-                                        <ExternalLink size={16} />
-                                    </a>
-                                    <button
-                                        onClick={() => deleteLink(link.id)}
-                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                        title="Revoke access"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        readOnly
+                                        value={`${window.location.origin}/shared/${link.token}`}
+                                        className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded px-2 py-1 w-full truncate focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                        onClick={(e) => e.currentTarget.select()}
+                                    />
                                 </div>
                             </div>
-                        ))}
-                        {links.length === 0 && !loading && (
-                            <div className="text-center py-8 bg-gray-50 border border-dashed border-gray-200 rounded-lg">
-                                <p className="text-sm text-gray-400">No active links found for this project.</p>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.origin}/shared/${link.token}`);
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                    title="Copy to clipboard"
+                                >
+                                    <Copy size={16} />
+                                </button>
+                                <a
+                                    href={`/shared/${link.token}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                    title="Open in new tab"
+                                >
+                                    <ExternalLink size={16} />
+                                </a>
+                                <button
+                                    onClick={() => deleteLink(link.id)}
+                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    title="Revoke access"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
-                        )}
-                        {loading && <p className="text-center text-xs text-gray-400">Loading...</p>}
-                    </div>
+                        </div>
+                    ))}
+                    {links.length === 0 && !loading && (
+                        <div className="text-center py-8 bg-gray-50 border border-dashed border-gray-200 rounded-lg">
+                            <p className="text-sm text-gray-400">No active links found for this project.</p>
+                        </div>
+                    )}
+                    {loading && <p className="text-center text-xs text-gray-400">Loading...</p>}
                 </div>
             </div>
         </div>
+
     );
 };
 

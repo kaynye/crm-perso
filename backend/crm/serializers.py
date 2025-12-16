@@ -80,12 +80,18 @@ class MeetingTemplateSerializer(serializers.ModelSerializer):
         read_only_fields = ['organization']
 
 class SharedLinkSerializer(serializers.ModelSerializer):
-    url = serializers.SerializerMethodField()
-    
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = SharedLink
-        fields = ['id', 'token', 'contract', 'company', 'allow_tasks', 'allow_task_creation', 'allow_meetings', 'allow_meeting_creation', 'allow_documents', 'allow_document_upload', 'created_at', 'expires_at', 'views_count', 'url']
+        fields = ['id', 'token', 'contract', 'company', 'allow_tasks', 'allow_task_creation', 'allow_meetings', 'allow_meeting_creation', 'allow_documents', 'allow_document_upload', 'created_at', 'expires_at', 'views_count', 'url', 'password']
         read_only_fields = ['token', 'views_count', 'created_by']
+
+    def create(self, validated_data):
+        from django.contrib.auth.hashers import make_password
+        if 'password' in validated_data and validated_data['password']:
+            validated_data['password'] = make_password(validated_data['password'])
+        return super().create(validated_data)
 
     def get_url(self, obj):
         # Return relative path for frontend
