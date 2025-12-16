@@ -39,6 +39,10 @@ const tableConfig = {
     // Database placeholder
     database: (_block: any) => {
         return `<div style="border: 1px dashed #ccc; padding: 10px; color: #666; font-style: italic;">[Base de données liée]</div>`;
+    },
+    // Delimiter
+    delimiter: () => {
+        return `<hr style="margin: 24px 0; border: none; border-top: 1px solid #e5e7eb; width: 100%;" />`;
     }
 };
 

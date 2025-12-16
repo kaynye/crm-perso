@@ -3,9 +3,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.utils import timezone
 from django.db.models import Q
-from .models import SharedLink, Meeting, Document
+from .models import SharedLink, Meeting, Document, MeetingTemplate
 from tasks.models import Task
-from .serializers import MeetingSerializer, DocumentSerializer
+from .serializers import MeetingSerializer
+from .serializers import DocumentSerializer
+from .serializers import MeetingTemplateSerializer
 from tasks.serializers import TaskSerializer
 
 def get_link_or_403(token):
@@ -39,7 +41,9 @@ class PublicSharedLinkView(views.APIView):
                 "allow_tasks": link.allow_tasks,
                 "allow_task_creation": link.allow_task_creation,
                 "allow_meetings": link.allow_meetings,
+                "allow_meeting_creation": link.allow_meeting_creation,
                 "allow_documents": link.allow_documents,
+                "allow_document_upload": link.allow_document_upload,
             },
             "company_name": link.company.name if link.company else (link.contract.company.name if link.contract else "Unknown"),
             "token": link.token
@@ -89,9 +93,14 @@ class PublicTaskViewSet(viewsets.ModelViewSet):
             
         serializer.save(**kwargs)
 
-class PublicMeetingViewSet(viewsets.ReadOnlyModelViewSet):
+class PublicMeetingSerializer(MeetingSerializer):
+    class Meta(MeetingSerializer.Meta):
+        read_only_fields = MeetingSerializer.Meta.read_only_fields + ['company', 'contract']
+
+class PublicMeetingViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
-    serializer_class = MeetingSerializer
+    serializer_class = PublicMeetingSerializer
+    http_method_names = ['get', 'post', 'head', 'options']
     
     def get_queryset(self):
         token = self.request.query_params.get('token')
@@ -108,9 +117,30 @@ class PublicMeetingViewSet(viewsets.ReadOnlyModelViewSet):
             ).distinct()
         return Meeting.objects.none()
 
-class PublicDocumentViewSet(viewsets.ReadOnlyModelViewSet):
+    def perform_create(self, serializer):
+        token = self.request.query_params.get('token')
+        link = get_link_or_403(token)
+        
+        if not link.allow_meetings or not link.allow_meeting_creation:
+            raise exceptions.PermissionDenied("Meeting creation not allowed")
+
+        # Link to appropriate scope
+        kwargs = {
+            'organization': link.company.organization if link.company else link.contract.organization,
+        }
+        
+        if link.contract:
+            kwargs['contract'] = link.contract
+            kwargs['company'] = link.contract.company
+        elif link.company:
+            kwargs['company'] = link.company
+            
+        serializer.save(**kwargs)
+
+class PublicDocumentViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     serializer_class = DocumentSerializer
+    http_method_names = ['get', 'post', 'head', 'options']
     
     def get_queryset(self):
         token = self.request.query_params.get('token')
@@ -126,3 +156,35 @@ class PublicDocumentViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(company=link.company) | Q(contract__company=link.company)
             ).distinct()
         return Document.objects.none()
+
+    def perform_create(self, serializer):
+        token = self.request.query_params.get('token')
+        link = get_link_or_403(token)
+        
+        if not link.allow_documents or not link.allow_document_upload:
+            raise exceptions.PermissionDenied("Document upload not allowed")
+
+        # Link to appropriate scope
+        kwargs = {
+            'organization': link.company.organization if link.company else link.contract.organization,
+        }
+        
+        if link.contract:
+            kwargs['contract'] = link.contract
+            kwargs['company'] = link.contract.company
+        elif link.company:
+            kwargs['company'] = link.company
+            
+        serializer.save(**kwargs)
+
+class PublicMeetingTemplateViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [AllowAny]
+    serializer_class = MeetingTemplateSerializer
+    
+    def get_queryset(self):
+        token = self.request.query_params.get('token')
+        link = get_link_or_403(token)
+        
+        # Get organization from link
+        org = link.company.organization if link.company else link.contract.organization
+        return MeetingTemplate.objects.filter(organization=org)

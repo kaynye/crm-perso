@@ -6,6 +6,9 @@ import MentionTool from './editor-tools/MentionTool';
 import DatabaseTool from './editor-tools/DatabaseTool';
 import MentionModal from './MentionModal';
 import AttachesTool from './editor-tools/AttachesTool';
+import Delimiter from '@editorjs/delimiter';
+import Checklist from '@editorjs/checklist';
+
 import Table from '@editorjs/table';
 import { useNavigate } from 'react-router-dom';
 
@@ -62,6 +65,11 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false, holde
                             defaultStyle: 'unordered'
                         }
                     },
+                    checklist: {
+                        class: Checklist,
+                        inlineToolbar: true
+                    },
+                    delimiter: Delimiter,
                     mention: {
                         class: MentionTool as any,
                         config: {

@@ -119,7 +119,9 @@ class SharedLink(models.Model):
     allow_tasks = models.BooleanField(default=True)
     allow_task_creation = models.BooleanField(default=False)
     allow_meetings = models.BooleanField(default=True)
+    allow_meeting_creation = models.BooleanField(default=False)
     allow_documents = models.BooleanField(default=True)
+    allow_document_upload = models.BooleanField(default=False)
     
     # Metadata
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)

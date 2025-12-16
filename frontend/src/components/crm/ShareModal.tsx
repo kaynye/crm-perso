@@ -17,7 +17,9 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
     const [allowTasks, setAllowTasks] = useState(true);
     const [allowTaskCreation, setAllowTaskCreation] = useState(false);
     const [allowMeetings, setAllowMeetings] = useState(true);
+    const [allowMeetingCreation, setAllowMeetingCreation] = useState(false);
     const [allowDocuments, setAllowDocuments] = useState(true);
+    const [allowDocumentUpload, setAllowDocumentUpload] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -48,7 +50,9 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
                 allow_tasks: allowTasks,
                 allow_task_creation: allowTaskCreation,
                 allow_meetings: allowMeetings,
-                allow_documents: allowDocuments
+                allow_meeting_creation: allowMeetingCreation,
+                allow_documents: allowDocuments,
+                allow_document_upload: allowDocumentUpload
             };
             await api.post('/crm/shared-links/', payload);
             fetchLinks();
@@ -102,14 +106,44 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
                                     </div>
                                 )}
                             </div>
-                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none font-medium">
-                                <input type="checkbox" checked={allowMeetings} onChange={e => setAllowMeetings(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                                Meetings
-                            </label>
-                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none font-medium">
-                                <input type="checkbox" checked={allowDocuments} onChange={e => setAllowDocuments(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                                Documents
-                            </label>
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none font-medium">
+                                    <input type="checkbox" checked={allowMeetings} onChange={e => setAllowMeetings(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
+                                    Meetings
+                                </label>
+                                {allowMeetings && (
+                                    <div className="ml-6 animate-fade-in-down">
+                                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                checked={allowMeetingCreation}
+                                                onChange={e => setAllowMeetingCreation(e.target.checked)}
+                                                className="rounded text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            Allow guests to propose meetings
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none font-medium">
+                                    <input type="checkbox" checked={allowDocuments} onChange={e => setAllowDocuments(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
+                                    Documents
+                                </label>
+                                {allowDocuments && (
+                                    <div className="ml-6 animate-fade-in-down">
+                                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                checked={allowDocumentUpload}
+                                                onChange={e => setAllowDocumentUpload(e.target.checked)}
+                                                className="rounded text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            Allow guests to upload documents
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <button onClick={createLink} className="w-full py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 flex items-center justify-center gap-2 transition-colors shadow-sm">
                             <Plus size={16} /> Generate Link
@@ -128,7 +162,9 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
                                         {link.allow_tasks && <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">Tasks</span>}
                                         {link.allow_task_creation && <span className="bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">Can Propose</span>}
                                         {link.allow_meetings && <span className="bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-100">Meetings</span>}
+                                        {link.allow_meeting_creation && <span className="bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">Can Propose</span>}
                                         {link.allow_documents && <span className="bg-yellow-50 text-yellow-600 px-1.5 py-0.5 rounded border border-yellow-100">Docs</span>}
+                                        {link.allow_document_upload && <span className="bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">Can Upload</span>}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <input
