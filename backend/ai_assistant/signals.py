@@ -6,13 +6,18 @@ from pages.models import Page
 from .vector_store import VectorStore
 from .rag import RAGService
 
-def update_vector_index(instance, type_name, text_content, title):
+def update_vector_index(instance, type_name, text_content, title, organization_id):
     """
     Helper to update the vector index for a single instance.
     """
     try:
         doc_id = f"{type_name}_{instance.id}"
-        metadata = {"type": type_name, "title": title, "id": str(instance.id)}
+        metadata = {
+            "type": type_name, 
+            "title": title, 
+            "id": str(instance.id),
+            "organization_id": str(organization_id)
+        }
         
         # Upsert (add or update)
         VectorStore.add_texts(
@@ -38,8 +43,9 @@ def delete_from_vector_index(instance, type_name):
 # --- Company ---
 @receiver(post_save, sender=Company)
 def index_company(sender, instance, **kwargs):
+    if not instance.organization: return
     text = f"Company: {instance.name}\nIndustry: {instance.industry}\nSize: {instance.size}\nAddress: {instance.address}\nNotes: {instance.notes}"
-    update_vector_index(instance, "company", text, instance.name)
+    update_vector_index(instance, "company", text, instance.name, instance.organization.id)
 
 @receiver(post_delete, sender=Company)
 def delete_company_index(sender, instance, **kwargs):
@@ -48,8 +54,9 @@ def delete_company_index(sender, instance, **kwargs):
 # --- Contract ---
 @receiver(post_save, sender=Contract)
 def index_contract(sender, instance, **kwargs):
+    if not instance.organization: return
     text = f"Contract: {instance.title}\nCompany: {instance.company.name if instance.company else 'N/A'}\nStatus: {instance.status}\nAmount: {instance.amount}\nContent: {instance.extracted_text or ''}"
-    update_vector_index(instance, "contract", text, instance.title)
+    update_vector_index(instance, "contract", text, instance.title, instance.organization.id)
 
 @receiver(post_delete, sender=Contract)
 def delete_contract_index(sender, instance, **kwargs):
@@ -58,9 +65,10 @@ def delete_contract_index(sender, instance, **kwargs):
 # --- Meeting ---
 @receiver(post_save, sender=Meeting)
 def index_meeting(sender, instance, **kwargs):
+    if not instance.organization: return
     clean_notes = RAGService._parse_notes(instance.notes)
     text = f"Meeting: {instance.title}\nDate: {instance.date}\nCompany: {instance.company.name if instance.company else 'N/A'}\nNotes: {clean_notes}"
-    update_vector_index(instance, "meeting", text, instance.title)
+    update_vector_index(instance, "meeting", text, instance.title, instance.organization.id)
 
 @receiver(post_delete, sender=Meeting)
 def delete_meeting_index(sender, instance, **kwargs):
@@ -69,9 +77,10 @@ def delete_meeting_index(sender, instance, **kwargs):
 # --- Task ---
 @receiver(post_save, sender=Task)
 def index_task(sender, instance, **kwargs):
+    if not instance.organization: return
     assigned = instance.assigned_to.username if instance.assigned_to else 'Unassigned'
     text = f"Task: {instance.title}\nStatus: {instance.status}\nAssigned: {assigned}\nDescription: {instance.description}"
-    update_vector_index(instance, "task", text, instance.title)
+    update_vector_index(instance, "task", text, instance.title, instance.organization.id)
 
 @receiver(post_delete, sender=Task)
 def delete_task_index(sender, instance, **kwargs):
@@ -80,9 +89,10 @@ def delete_task_index(sender, instance, **kwargs):
 # --- Page ---
 @receiver(post_save, sender=Page)
 def index_page(sender, instance, **kwargs):
+    if not instance.organization: return
     clean_content = RAGService._parse_notes(instance.content)
     text = f"Page: {instance.title}\nType: {instance.page_type}\nContent: {clean_content}"
-    update_vector_index(instance, "page", text, instance.title)
+    update_vector_index(instance, "page", text, instance.title, instance.organization.id)
 
 @receiver(post_delete, sender=Page)
 def delete_page_index(sender, instance, **kwargs):

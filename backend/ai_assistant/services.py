@@ -15,6 +15,7 @@ from .tools.meetings import MeetingTools
 from .tools.analytics import AnalyticsTools
 from .tools.content import ContentTools
 from .tools.email_tools import EmailTools
+from .tools.vision import VisionTools
 
 class LLMService:
     def __init__(self):
@@ -45,7 +46,8 @@ class LLMService:
         
         # 1. Retrieve Context (RAG) - ALWAYS run this to give the agent knowledge
         search_terms = self.extract_entities(last_user_msg)
-        rag_context = RAGService.get_context(search_terms)
+        rag_context = RAGService.get_context(search_terms, user=user)
+        # rag_context = "" # RAG Disabled for now as per user request
         
         # 2. Intent Detection (with Context)
         intent = self._detect_intent(last_user_msg, page_context, rag_context)
@@ -56,7 +58,7 @@ class LLMService:
         
         # 3. Execute Tool if applicable
         if tool_name and tool_name != 'SEARCH':
-            result = self._execute_tool(tool_name, params, last_user_msg, user)
+            result = self._execute_tool(tool_name, params, last_user_msg, user, rag_context)
             # If result is a dict (structured action), return it
             if isinstance(result, dict):
                 return result
@@ -109,39 +111,58 @@ class LLMService:
         CURRENT DATE: {CURRENT_DATE}
         
         AVAILABLE TOOLS:
-        - CREATE_COMPANY: "Create company Acme", "Add new client Domos" (params: name, industry, size)
-        - CREATE_CONTACT: "Add contact John Doe to Acme" (params: first_name, last_name, company_name, email, position)
-        - CREATE_CONTACT: "Add contact John Doe to Acme to Acme" (params: first_name, last_name, company_name, email, position)
-        - CREATE_CONTRACT: "New contract for Acme", "Draft contract video promotion" (params: title, company_name, amount, status)
-        - UPDATE_CONTRACT: "Mark contract X as signed" (params: title, status)
-        - CREATE_TASK: "Remind me to call John tomorrow", "New task: Buy milk" (params: title, description, due_date) -> USE ONLY FOR SINGLE TASKS.
-        - CREATE_MEETING: "Schedule call with Acme next Tuesday at 2pm", "Meeting with Bob on 2025-12-01 10:00" (params: title, company_name, date, type)
-        - ADD_NOTE: "Add note 'Called him today'", "Note: Client is happy" (params: note_content, entity_type, entity_id)
-        - ANALYZE_DATA: "Total contracts signed this month", "How many urgent tasks?" (params: entity_type, metric, time_period, filters)
-        - DRAFT_CONTENT: "Draft email to TechNova about contract", "Write follow-up for meeting" (params: entity_type, entity_id, instruction)
-        - SEND_EMAIL: "Send email to client@example.com", "Envoyer l'email" (params: to_email, subject, body)
-        - EXTRACT_TASKS: "Extract tasks from these notes", "Make todos from this meeting", "Create tasks for the week: Monday run, Tuesday gym...", "Sport task for every day next week", "Daily tasks for next month" (params: text) -> USE FOR MULTIPLE TASKS OR GENERATION.
-        - LIST_TASKS: "What are my tasks?", "Tasks for this month", "Urgent tasks" (params: status, priority, due_date_range)
-        - SEARCH: General questions, "Who is X?", "What did we say about Y?" (No params)
+        - CREATE_COMPANY: "Create company Acme" (params: name, industry, size)
+        - UPDATE_COMPANY: "Update Acme industry to Tech", "Set size of Acme to Large", "Add note to Acme" (params: name, industry, size, website, notes)
+        - GET_COMPANY_DETAILS: "Tell me about Acme", "Details for TechCorp" (params: name)
         
-        IMPORTANT:
-        - For ADD_NOTE / DRAFT_CONTENT: If user is viewing a specific entity (see context), use that entity's type and ID.
-        - For LIST_TASKS:
-            - due_date_range: 'today', 'this_week', 'this_month', 'last_month', 'overdue'
-            - status: 'todo', 'in_progress', 'done'
-            - priority: 'low', 'medium', 'high'
-        - For ANALYZE_DATA: 
-            - entity_type: 'company', 'contract', 'task', 'meeting'
-            - metric: 'count', 'sum_amount' (contracts), 'urgent_tasks'
-            - time_period: 'this_month', 'last_month', 'this_year', 'all_time'
-            - filters: Use context if applicable (e.g. if viewing Company X, add {{'company': 'X'}}).
-        - For dates (like "tomorrow", "next week", "in 3 days", or "25/12/2025"), calculate the exact date based on CURRENT DATE and return it in 'YYYY-MM-DD' format.
-        - For MEETINGS, include the time if specified (format: 'YYYY-MM-DD HH:MM:SS'). If no time is given, assume 09:00:00.
+        - CREATE_CONTACT: "Add contact John Doe to Acme" (params: first_name, last_name, company_name, email, position)
+        - UPDATE_CONTACT: "Update John Doe email", "Change position of Jane to CTO" (params: name, email, position, phone)
+        
+        - CREATE_CONTRACT: "New contract for Acme" (params: title, company_name, amount, status)
+        - UPDATE_CONTRACT: "Mark contract X as signed" (params: title, status)
+        
+        - CREATE_TASK: "Remind me to call John" (params: title, description, due_date)
+        - EXTRACT_TASKS: "Extract tasks from these notes" (params: text, company_name)
+        - LIST_TASKS: "My tasks" (params: status, priority, due_date_range)
+        
+        - CREATE_MEETING: "Schedule call with Acme" (params: title, company_name, date, type)
+        - LIST_MEETINGS: "Meetings with Acme", "Upcoming meetings" (params: company_name, date_range)
+        
+        - ADD_NOTE: "Add note to Acme" (params: note_content, entity_type, entity_id)
+        - ANALYZE_DATA: "How many contracts?", "Top clients by revenue", "Most active clients" (params: entity_type, metric, time_period, filters)
+        - DRAFT_CONTENT: "Draft email" (params: entity_type, entity_id, instruction)
+        - SEND_EMAIL: "Send email" (params: to_email, subject, body)
+        - ANALYZE_IMAGE: "Analyze this image", "Read this invoice", "What is in this picture?" (params: file_id)
+        
+        - SEARCH: General questions (No params)
+        - ASK_USER: Use this if a REQUIRED parameter is missing for a tool. (params: question)
+        
+        REQUIRED PARAMETERS:
+        - CREATE_COMPANY: name
+        - CREATE_CONTACT: first_name, last_name
+        - CREATE_CONTRACT: title, company_name
+        - CREATE_MEETING: title, company_name, date
+        - CREATE_TASK: title
+        
+        INSTRUCTIONS:
+        1. If the user's request matches a tool but is missing a REQUIRED parameter (listed above), use 'ASK_USER'.
+           Example: "Create meeting with Acme" -> {{ "tool": "ASK_USER", "params": {{ "question": "Quelle est la date et l'heure de la réunion ?" }} }}
+        2. SMART WORKFLOWS (Multi-step):
+           - "Onboard new client" / "Nouveau client":
+             Step 1: Ask for Company Name -> CREATE_COMPANY
+             Step 2: Ask for Industry/Size -> UPDATE_COMPANY
+             Step 3: Ask for Main Contact Name/Email -> CREATE_CONTACT
+             Step 4: Ask for Kickoff Meeting Date -> CREATE_MEETING
+             (Guide the user through these steps one by one using ASK_USER if information is missing).
+        3. For ANALYZE_DATA:
+           - "Top clients by revenue" -> metric='top_clients_revenue', entity_type='contract'
+           - "Most active clients" -> metric='top_clients_activity', entity_type='meeting'
+        4. Verify if the missing parameter is in the PAGE CONTEXT or DATABASE CONTEXT. If yes, use it.
+        5. If all parameters are present, use the specific tool.
         
         OUTPUT FORMAT:
         Return ONLY a JSON object.
-        Example: {{ "tool": "CREATE_COMPANY", "params": {{ "name": "Acme", "industry": "Tech" }} }}
-        Example: {{ "tool": "SEARCH", "params": {{}} }}
+        Example: {{ "tool": "CREATE_COMPANY", "params": {{ "name": "Acme" }} }}
         """
         
         messages = [
@@ -158,15 +179,21 @@ class LLMService:
         except:
             return {"tool": "SEARCH"}
 
-    def _execute_tool(self, tool_name, params, raw_text, user=None):
+    def _execute_tool(self, tool_name, params, raw_text, user=None, rag_context=""):
         """
         Executes the selected tool.
         """
         try:
             if tool_name == 'CREATE_COMPANY':
                 return CRMTools.create_company(user=user, **params)
+            elif tool_name == 'UPDATE_COMPANY':
+                return CRMTools.update_company(user=user, **params)
+            elif tool_name == 'GET_COMPANY_DETAILS':
+                return CRMTools.get_company_details(user=user, **params)
             elif tool_name == 'CREATE_CONTACT':
                 return CRMTools.create_contact(user=user, **params)
+            elif tool_name == 'UPDATE_CONTACT':
+                return CRMTools.update_contact(user=user, **params)
             elif tool_name == 'CREATE_CONTRACT':
                 return CRMTools.create_contract(user=user, **params)
             elif tool_name == 'UPDATE_CONTRACT':
@@ -175,29 +202,70 @@ class LLMService:
                 return TaskTools.create_task(user=user, **params)
             elif tool_name == 'CREATE_MEETING':
                 return MeetingTools.create_meeting(user=user, **params)
+            elif tool_name == 'LIST_MEETINGS':
+                return MeetingTools.list_meetings(user=user, **params)
             elif tool_name == 'ADD_NOTE':
                 return CRMTools.add_note(user=user, **params)
             elif tool_name == 'ANALYZE_DATA':
                 return AnalyticsTools.analyze_data(user=user, **params)
             elif tool_name == 'DRAFT_CONTENT':
                 # Pass self (LLMService instance) to the tool
-                return ContentTools.draft_content(llm_service=self, user=user, **params)
+                return ContentTools.draft_content(llm_service=self, user=user, rag_context=rag_context, **params)
             elif tool_name == 'SEND_EMAIL':
                 return EmailTools.send_email(user=user, **params)
             elif tool_name == 'EXTRACT_TASKS':
                 # For extraction, we might need the full text if the user said "from these notes: [TEXT]"
-                # Or if they refer to previous context, but here we assume the text is in the prompt for now.
-                # If the text is not in params, use the raw input.
+                # Or if they refer to previous context.
+                # We append RAG context to the analyzed text so the LLM has source material.
                 text_to_analyze = params.get('text') or raw_text
-                return TaskTools.extract_and_create_tasks(text_to_analyze, self, user=user)
+                if rag_context:
+                    text_to_analyze += f"\n\nCONTEXTE ADDITIONNEL (RAG):\n{rag_context}"
+                
+                company_name = params.get('company_name')
+                company_name = params.get('company_name')
+                
+                # Check for dry_run intent (keywords like "Suggest", "What scan", "Proposed")
+                # Or simply default to True if not explicitly "Create"
+                # For now, let's look for params or context.
+                # Actually, let's rely on params.
+                dry_run = params.get('dry_run', False) 
+                
+                # If user asks "What tasks..." -> dry_run=True should be set by LLM ideally.
+                # But to start, we can infer:
+                if "tache" in raw_text.lower() and ("quoi" in raw_text.lower() or "quelle" in raw_text.lower() or "peux" in raw_text.lower()):
+                    dry_run = True
+                
+                # OVERRIDE: If explicit confirmation/creation matches (e.g. button click)
+                if "confirmation" in raw_text.lower() or "création" in raw_text.lower() or "create" in raw_text.lower() or "procéder" in raw_text.lower():
+                    dry_run = False
+                    
+                return TaskTools.extract_and_create_tasks(text_to_analyze, self, user=user, company_name=company_name, dry_run=dry_run, original_query=raw_text)
             elif tool_name == 'LIST_TASKS':
-                return TaskTools.list_tasks(**params)
+                return TaskTools.list_tasks(user=user, **params)
+            elif tool_name == 'ASK_USER':
+                # Return the question directly to the chat
+                return params.get('question', "Je n'ai pas compris, pouvez-vous préciser ?")
+            elif tool_name == 'ANALYZE_IMAGE':
+                file_id = params.get('file_id')
+                # If file_id is not provided by the intent (maybe implicit?), 
+                # we should check if there's a recent file upload in the context (passed from frontend).
+                # But here lets assume params has it or we can pass it from context.
+                if not file_id:
+                     # Fallback if the user just uploaded something and said "analyze this"
+                     # The frontend should pass the last uploaded file_id in the message context theoretically.
+                     # For now, let's assume valid ID.
+                     return "Erreur: Aucun fichier spécifié."
+                
+                # Construct full path
+                full_path = os.path.join(settings.MEDIA_ROOT, file_id)
+                prompt = raw_text # Use user's full question as prompt
+                return VisionTools.analyze_image(full_path, prompt, user=user)
             else:
                 return "Unknown tool."
         except Exception as e:
             return f"Error executing tool {tool_name}: {str(e)}"
 
-    def _run_rag_search(self, messages, last_user_msg):
+    def _run_rag_search(self, messages, last_user_msg, user=None):
         """
         Performs the standard RAG workflow.
         """
@@ -205,7 +273,8 @@ class LLMService:
         search_terms = self.extract_entities(last_user_msg)
         
         # 2. Retrieve Context
-        context = RAGService.get_context(search_terms)
+        context = RAGService.get_context(search_terms, user=user)
+        # context = "" # RAG Disabled
         
         # 3. Generate Answer
         return self.chat(messages, context)

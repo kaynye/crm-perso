@@ -5,13 +5,14 @@ import { MapPin, Plus, Building, Share2 } from 'lucide-react';
 import clsx from 'clsx';
 import DocumentList from '../../components/documents/DocumentList';
 import ShareModal from '../../components/crm/ShareModal';
+import TaskBoard from '../tasks/TaskBoard';
 
 const CompanyDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [company, setCompany] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'contracts' | 'meetings' | 'documents'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'contracts' | 'meetings' | 'documents' | 'tasks'>('overview');
     const [contracts, setContracts] = useState<any[]>([]);
     const [meetings, setMeetings] = useState<any[]>([]);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -58,6 +59,8 @@ const CompanyDetail: React.FC = () => {
             console.error("Failed to fetch meetings", error);
         }
     };
+
+
 
     if (loading) return <div className="p-8 flex justify-center items-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>;
     if (!company) return <div className="p-8 text-center text-gray-500">Entreprise introuvable</div>;
@@ -132,6 +135,15 @@ const CompanyDetail: React.FC = () => {
                         <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
                             {meetings.length}
                         </span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('tasks')}
+                        className={clsx(
+                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
+                            activeTab === 'tasks' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                        )}
+                    >
+                        Tâches
                     </button>
                     <button
                         onClick={() => setActiveTab('documents')}
@@ -282,6 +294,12 @@ const CompanyDetail: React.FC = () => {
                                 </div>
                             )}
                         </div>
+                    </div>
+                )}
+
+                {activeTab === 'tasks' && (
+                    <div className="h-[calc(100vh-200px)]">
+                        <TaskBoard filter={{ company: id }} />
                     </div>
                 )}
 

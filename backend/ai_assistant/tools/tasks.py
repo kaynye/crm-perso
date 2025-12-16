@@ -40,12 +40,20 @@ class TaskTools:
         }
 
     @staticmethod
-    def extract_and_create_tasks(text, llm_service, user=None):
+    def extract_and_create_tasks(text, llm_service, user=None, company_name=None, dry_run=False, original_query=None):
         """
-        Uses LLM to extract tasks from text and creates them.
+        Uses LLM to extract tasks from text. 
+        If dry_run=True, returns suggested tasks without creating.
+        If dry_run=False, creates them.
         """
         if not user or not hasattr(user, 'organization'):
             return "Erreur: Impossible de déterminer l'organisation. Utilisateur non authentifié."
+
+        company = None
+        if company_name:
+            from crm.models import Company
+            # Try exact match or contains
+            company = Company.objects.filter(organization=user.organization, name__icontains=company_name).first()
 
         now = timezone.localtime()
         prompt = f"""
@@ -56,6 +64,8 @@ class TaskTools:
         - If the text describes specific tasks, extract them.
         - If the text asks to generate tasks for a schedule (e.g. "every day next week", "daily sport"), GENERATE separate tasks for each required day.
         - Calculate specific "due_date" (YYYY-MM-DD) for each task based on the Current Date.
+        - IMPORTANT: The 'title' and 'description' fields MUST be in the SAME LANGUAGE as the Input Text (default to French if unclear).
+        - Status MUST be 'todo' UNLESS the text explicitly states the task is currently 'in progress'. Default to 'todo'.
         
         Input Text:
         {text}
@@ -70,49 +80,98 @@ class TaskTools:
         
         messages = [{'role': 'user', 'content': prompt}]
         
-        # We need to access the low-level chat method of the service
-        # Assuming llm_service has a method to get raw response or we use the public chat
-        # But public chat has RAG context injection which we don't need here.
-        # We'll use the internal _chat_openai or _chat_gemini if accessible, or just chat with empty context.
-        
         response_text = llm_service.chat(messages, context="", system_override="You are a task generator. Output valid JSON only.")
         
-        # Clean response (sometimes LLMs wrap in ```json ... ```)
-        if "```" in response_text:
-            response_text = response_text.split("```")[1].replace("json", "").strip()
-            
-        created_count = 0
+        # Robust JSON extraction
+        import re
+        tasks_data = None
+        
+        # 1. Attempt Regex + JSON
         try:
-            tasks_data = json.loads(response_text)
-            if isinstance(tasks_data, list):
-                for t in tasks_data:
-                    # Handle due_date
-                    due_date = t.get('due_date')
-                    if due_date:
-                        # Ensure it's just a date or datetime
-                        # The model might return YYYY-MM-DD
-                        pass 
-                        
-                    Task.objects.create(
-                        title=t.get('title', 'Untitled Task'),
-                        description=t.get('description', ''),
-                        priority=t.get('priority', 'medium'),
-                        status=t.get('status', 'todo'),
-                        due_date=due_date,
-                        organization=user.organization
-                    )
-                    created_count += 1
-            return f"Génération réussie : {created_count} tâches créées."
-        except json.JSONDecodeError:
-            return f"Échec de l'analyse des tâches depuis la réponse IA. Sortie brute : {response_text[:100]}..."
+            match = re.search(r'\[.*\]', response_text, re.DOTALL)
+            if match:
+                json_str = match.group()
+            else:
+                match_obj = re.search(r'\{.*\}', response_text, re.DOTALL)
+                json_str = match_obj.group() if match_obj else response_text
+
+            tasks_data = json.loads(json_str)
+        except (json.JSONDecodeError, AttributeError):
+            # 2. Fallback to AST literal_eval
+            import ast
+            try:
+                tasks_data = ast.literal_eval(json_str) if 'json_str' in locals() else ast.literal_eval(response_text)
+            except:
+                pass
+
+        # Normalize data
+        if tasks_data:
+            if isinstance(tasks_data, dict) and 'tasks' in tasks_data:
+                tasks_data = tasks_data['tasks']
+            if not isinstance(tasks_data, list):
+                tasks_data = [tasks_data]
+        else:
+            return f"Échec de l'analyse des tâches. Format invalide. Sortie brute : {response_text[:100]}..."
+
+        if dry_run:
+            # Return suggestions
+            suggestions = []
+            for t in tasks_data:
+                due = t.get('due_date', 'None')
+                suggestions.append({'label': f"{t.get('title')} ({due})", 'value': f"Create task {t.get('title')} due {due}"})
+            
+            # Format as a nice message + CHOICE actions
+            msg = f"J'ai identifié {len(tasks_data)} tâches potentielles pour {company.name if company else 'inconnu'} :\n"
+            for t in tasks_data:
+                msg += f"- {t.get('title')} (Pour le {t.get('due_date')})\n"
+            
+            msg += "\nVoulez-vous que je les crée toutes ?"
+            
+            # Use original query to reformulate the confirmation command
+            confirm_value = "Confirm create all extracted tasks"
+            if original_query:
+                confirm_value = f"Procéder à la création des tâches (Confirmation) : {original_query}"
+            
+            return {
+                "content": msg,
+                "action": {
+                    "type": "CHOICES",
+                    "label": "Confirmer",
+                    "choices": [
+                        {"label": "Oui, créer tout", "value": confirm_value},
+                        {"label": "Non, annuler", "value": "Annuler l'extraction"}
+                    ]
+                }
+            }
+
+        created_count = 0
+        for t in tasks_data:
+            # Handle due_date
+            due_date = t.get('due_date')
+            if due_date == "": due_date = None
+                
+            Task.objects.create(
+                title=t.get('title', 'Untitled Task'),
+                description=t.get('description', ''),
+                priority=t.get('priority', 'medium'),
+                status=t.get('status', 'todo'),
+                due_date=due_date,
+                organization=user.organization,
+                company=company
+            )
+            created_count += 1
+        return f"Génération réussie : {created_count} tâches créées."
 
     @staticmethod
-    def list_tasks(status=None, priority=None, due_date_range=None, limit=5):
+    def list_tasks(status=None, priority=None, due_date_range=None, limit=5, user=None):
         """
         Lists tasks based on filters.
         due_date_range: 'today', 'this_week', 'this_month', 'overdue'
         """
-        tasks = Task.objects.all().order_by('due_date')
+        if not user or not hasattr(user, 'organization'):
+            return "Erreur: Impossible de déterminer l'organisation."
+
+        tasks = Task.objects.filter(organization=user.organization).order_by('due_date')
         
         if status:
             tasks = tasks.filter(status=status)
@@ -138,7 +197,7 @@ class TaskTools:
             # Create aware datetimes for start and end of month
             start_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             end_month = now.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
-            end_month = now.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
+            # end_month = now.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999) # Duplicate line removed
             tasks = tasks.filter(due_date__range=[start_month, end_month])
         elif due_date_range == 'last_month':
             import calendar

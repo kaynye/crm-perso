@@ -130,3 +130,95 @@ class CRMTools:
                 "url": f"/crm/{entity_type if entity_type != 'company' else 'companies'}/{entity_id}" if entity_type != 'contract' else f"/crm/contracts/{entity_id}"
             }
         }
+    @staticmethod
+    def update_company(name, industry=None, size=None, website=None, notes=None, user=None):
+        """Updates an existing company."""
+        if not user or not hasattr(user, 'organization'):
+            return "Erreur: Impossible de déterminer l'organisation."
+
+        company = Company.objects.filter(name__icontains=name, organization=user.organization).first()
+        if not company:
+            return f"Erreur : Entreprise '{name}' introuvable."
+            
+        changes = []
+        if industry is not None:
+            company.industry = industry
+            changes.append(f"secteur ({industry})")
+        if size is not None:
+            company.size = size
+            changes.append(f"taille ({size})")
+        if website is not None:
+            company.website = website
+            changes.append(f"site web ({website})")
+        if notes is not None:
+            company.notes = notes
+            changes.append("notes")
+            
+        company.save()
+        
+        if not changes:
+            return f"Aucune modification demandée pour '{name}'."
+            
+        return f"Entreprise '{company.name}' mise à jour : {', '.join(changes)}."
+
+    @staticmethod
+    def update_contact(name, email=None, position=None, phone=None, user=None):
+        """Updates an existing contact by name."""
+        if not user or not hasattr(user, 'organization'):
+            return "Erreur: Impossible de déterminer l'organisation."
+
+        # Simplistic name search (last word is last name?)
+        # Let's search by string container
+        from django.db.models import Q
+        contact = Contact.objects.filter(
+            Q(first_name__icontains=name) | Q(last_name__icontains=name) | Q(email__icontains=name),
+            organization=user.organization
+        ).first()
+        
+        if not contact:
+            return f"Erreur : Contact '{name}' introuvable."
+            
+        changes = []
+        if email is not None:
+            contact.email = email
+            changes.append(f"email ({email})")
+        if position is not None:
+            contact.position = position
+            changes.append(f"poste ({position})")
+        if phone is not None:
+            contact.phone = phone
+            changes.append(f"téléphone ({phone})")
+            
+        contact.save()
+        
+        if not changes:
+            return f"Aucune modification demandée pour '{contact.first_name} {contact.last_name}'."
+            
+        return f"Contact '{contact.first_name} {contact.last_name}' mis à jour : {', '.join(changes)}."
+        
+    @staticmethod
+    def get_company_details(name, user=None):
+        """Gets full details of a company."""
+        if not user or not hasattr(user, 'organization'):
+            return "Erreur: Impossible de déterminer l'organisation."
+            
+        company = Company.objects.filter(name__icontains=name, organization=user.organization).first()
+        if not company:
+             return f"Erreur : Entreprise '{name}' introuvable."
+             
+        # Build text summary
+        details = f"Détails de {company.name}:\n"
+        details += f"- Secteur: {company.industry}\n"
+        details += f"- Taille: {company.size}\n"
+        details += f"- Site: {company.website}\n"
+        details += f"- Adresse: {company.address}\n"
+        details += f"- Notes: {company.notes}\n"
+        
+        # Related counts
+        contact_count = company.contacts.count()
+        meeting_count = company.meetings.count()
+        contract_count = company.contracts.count()
+        
+        details += f"\nRelations:\n- {contact_count} contacts\n- {meeting_count} réunions\n- {contract_count} contrats"
+        
+        return details

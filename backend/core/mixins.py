@@ -6,14 +6,14 @@ class OrganizationScopeMixin:
     Also ensures created objects are assigned to the user's organization.
     """
     def get_queryset(self):
+        if self.request.user.organization:
+            return super().get_queryset().filter(organization=self.request.user.organization)
+
         # Allow superusers to see everything (optional, but good for admin)
         if self.request.user.is_superuser:
             return super().get_queryset()
-            
-        if not self.request.user.organization:
-            raise PermissionDenied("User does not belong to an organization.")
-            
-        return super().get_queryset().filter(organization=self.request.user.organization)
+
+        raise PermissionDenied("User does not belong to an organization.")
 
     def perform_create(self, serializer):
         if not self.request.user.organization:

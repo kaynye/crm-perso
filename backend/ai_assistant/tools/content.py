@@ -3,7 +3,7 @@ from tasks.models import Task
 
 class ContentTools:
     @staticmethod
-    def draft_content(entity_type, entity_id, instruction, llm_service, user=None):
+    def draft_content(entity_type, entity_id, instruction, llm_service, user=None, rag_context=""):
         """
         Drafts content based on an entity and instructions.
         """
@@ -27,24 +27,24 @@ class ContentTools:
                 data_str = f"Contact: {entity.first_name} {entity.last_name}\nPosition: {entity.position}\nCompany: {entity.company.name if entity.company else 'N/A'}"
         
         if not entity:
-            return f"Error: {entity_type} not found."
+            # If no entity, maybe they just want general drafting using RAG?
+            pass
 
         # Generate content using LLM
         prompt = f"""
         You are a professional business assistant.
         
-        CONTEXT DATA:
+        ENTITY DATA:
         {data_str}
+        
+        ADDITIONAL CONTEXT (RAG):
+        {rag_context}
         
         INSTRUCTION:
         {instruction}
         
         Draft the content as requested. Be professional and concise.
         """
-        
-        # We use the service's internal chat method
-        # We need to import LLMService inside or pass it. 
-        # It is passed as 'llm_service' argument.
         
         messages = [{'role': 'user', 'content': prompt}]
         response = llm_service.chat(messages, context="")

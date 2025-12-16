@@ -37,7 +37,13 @@ const Home: React.FC = () => {
 
     // Calculate total revenue from chart data for the KPI card
     const totalRevenue = data?.analytics?.revenue?.reduce((acc: number, curr: any) => acc + curr.value, 0) || 0;
-    const pendingTasks = data?.my_tasks?.length || 0;
+
+    // Calculate unique pending tasks (My Tasks + Urgent Tasks)
+    const myTaskIds = data?.my_tasks?.map((t: any) => t.id) || [];
+    const urgentTaskIds = data?.urgent_tasks?.map((t: any) => t.id) || [];
+    const uniquePendingTasks = new Set([...myTaskIds, ...urgentTaskIds]);
+    const pendingTasks = uniquePendingTasks.size;
+
     const activeContractsCount = data?.active_contracts?.length || 0;
 
     return (
@@ -94,16 +100,21 @@ const Home: React.FC = () => {
                         <button onClick={() => navigate('/tasks')} className="text-sm text-indigo-600 hover:underline">Voir tout</button>
                     </div>
                     <div className="space-y-3">
-                        {data?.my_tasks?.slice(0, 5).map((task: any) => (
-                            <div key={task.id} className="flex items-center p-2 hover:bg-gray-50 rounded border-l-2 border-transparent hover:border-indigo-500 transition-all cursor-pointer" onClick={() => navigate('/tasks')}>
-                                <div className={`w-2 h-2 rounded-full mr-3 ${task.priority === 'high' ? 'bg-red-500' : 'bg-blue-500'}`} />
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
-                                    <p className="text-xs text-gray-500">{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Sans date'}</p>
+                        <div className="space-y-3">
+                            {(data?.urgent_tasks?.length ? data.urgent_tasks : data?.my_tasks?.slice(0, 5))?.map((task: any) => (
+                                <div key={task.id} className="flex items-center p-2 hover:bg-gray-50 rounded border-l-2 border-transparent hover:border-indigo-500 transition-all cursor-pointer" onClick={() => navigate('/tasks')}>
+                                    <div className={`w-2 h-2 rounded-full mr-3 ${task.priority === 'high' ? 'bg-red-500' : 'bg-blue-500'}`} />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
+                                        <p className="text-xs text-gray-500">
+                                            {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Sans date'}
+                                            {task.assigned_to === 'Unassigned' && <span className="ml-2 text-red-500 text-[10px]">(Non assigné)</span>}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                        {!data?.my_tasks?.length && <p className="text-sm text-gray-500">Rien à faire ! 🎉</p>}
+                            ))}
+                            {!data?.urgent_tasks?.length && !data?.my_tasks?.length && <p className="text-sm text-gray-500">Rien à faire ! 🎉</p>}
+                        </div>
                     </div>
                 </div>
             </div>

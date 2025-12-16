@@ -55,7 +55,7 @@ class AnalyticsTools:
             clean_filters = {}
             for k, v in filters.items():
                 if v and v != 'any':
-                    if k == 'company':
+                    if k == 'company' or k == 'company_name':
                         # Handle company name or ID
                         if isinstance(v, int) or (isinstance(v, str) and v.isdigit()):
                             clean_filters['company__id'] = v
@@ -84,5 +84,34 @@ class AnalyticsTools:
                 
             task_list = "\n".join([f"- {t.title} (Échéance : {t.due_date.strftime('%d/%m/%Y') if t.due_date else 'Aucune'})" for t in tasks])
             return f"Vous avez {count} tâches urgentes :\n{task_list}"
+            
+        elif metric == 'top_clients_revenue':
+            # Top clients by signed contract amount
+            top_companies = Contract.objects.filter(
+                organization=user.organization, 
+                status='signed'
+            ).values('company__name').annotate(total_revenue=Sum('amount')).order_by('-total_revenue')[:5]
+            
+            if not top_companies:
+                return "Aucun revenu trouvé (contrats signés)."
+                
+            report = "Top Clients par Revenu (Contrats Signés) :\n"
+            for c in top_companies:
+                report += f"- {c['company__name']}: {c['total_revenue']} €\n"
+            return report
+
+        elif metric == 'top_clients_activity':
+            # Top clients by meetings count
+            top_companies = Meeting.objects.filter(
+                organization=user.organization
+            ).values('company__name').annotate(total_meetings=Count('id')).order_by('-total_meetings')[:5]
+            
+            if not top_companies:
+                return "Aucune activité de réunion trouvée."
+                
+            report = "Top Clients par Activité (Réunions) :\n"
+            for c in top_companies:
+                report += f"- {c['company__name']}: {c['total_meetings']} réunions\n"
+            return report
 
         return f"Analyse terminée. Résultat : {queryset.count()}"

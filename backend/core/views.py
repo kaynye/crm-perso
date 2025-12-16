@@ -26,7 +26,7 @@ class MentionSearchView(APIView):
         results = []
 
         # Search Pages
-        pages = Page.objects.filter(title__icontains=query)[:5]
+        pages = Page.objects.filter(organization=request.user.organization, title__icontains=query)[:5]
         for page in pages:
             results.append({
                 'id': str(page.id),
@@ -36,7 +36,7 @@ class MentionSearchView(APIView):
             })
 
         # Search Companies
-        companies = Company.objects.filter(name__icontains=query)[:5]
+        companies = Company.objects.filter(organization=request.user.organization, name__icontains=query)[:5]
         for company in companies:
             results.append({
                 'id': str(company.id),
@@ -47,7 +47,8 @@ class MentionSearchView(APIView):
 
         # Search Contacts
         contacts = Contact.objects.filter(
-            Q(first_name__icontains=query) | Q(last_name__icontains=query)
+            Q(first_name__icontains=query) | Q(last_name__icontains=query),
+            organization=request.user.organization
         )[:5]
         for contact in contacts:
             results.append({
@@ -58,7 +59,7 @@ class MentionSearchView(APIView):
             })
 
         # Search Tasks
-        tasks = Task.objects.filter(title__icontains=query)[:5]
+        tasks = Task.objects.filter(organization=request.user.organization, title__icontains=query)[:5]
         for task in tasks:
             results.append({
                 'id': str(task.id),
@@ -80,7 +81,7 @@ class GlobalSearchView(APIView):
         results = []
 
         # Search Pages
-        pages = Page.objects.filter(title__icontains=query)[:5]
+        pages = Page.objects.filter(organization=request.user.organization, title__icontains=query)[:5]
         for page in pages:
             results.append({
                 'id': str(page.id),
@@ -92,7 +93,7 @@ class GlobalSearchView(APIView):
 
         # Search Databases
         from databases.models import Database
-        databases = Database.objects.filter(title__icontains=query)[:5]
+        databases = Database.objects.filter(page__organization=request.user.organization, title__icontains=query)[:5]
         for db in databases:
             results.append({
                 'id': str(db.id),
@@ -103,7 +104,7 @@ class GlobalSearchView(APIView):
             })
 
         # Search Companies
-        companies = Company.objects.filter(name__icontains=query)[:5]
+        companies = Company.objects.filter(organization=request.user.organization, name__icontains=query)[:5]
         for company in companies:
             results.append({
                 'id': str(company.id),
@@ -115,7 +116,8 @@ class GlobalSearchView(APIView):
 
         # Search Contacts
         contacts = Contact.objects.filter(
-            Q(first_name__icontains=query) | Q(last_name__icontains=query)
+            Q(first_name__icontains=query) | Q(last_name__icontains=query),
+            organization=request.user.organization
         )[:5]
         for contact in contacts:
             results.append({
@@ -127,7 +129,7 @@ class GlobalSearchView(APIView):
             })
 
         # Search Tasks
-        tasks = Task.objects.filter(title__icontains=query)[:5]
+        tasks = Task.objects.filter(organization=request.user.organization, title__icontains=query)[:5]
         for task in tasks:
             results.append({
                 'id': str(task.id),
@@ -144,7 +146,7 @@ class DashboardView(APIView):
 
     def get(self, request):
         # Recent Pages
-        recent_pages = Page.objects.order_by('-updated_at')[:5]
+        recent_pages = Page.objects.filter(organization=request.user.organization).order_by('-updated_at')[:5]
         recent_pages_data = [{
             'id': str(p.id),
             'title': p.title,
@@ -152,7 +154,7 @@ class DashboardView(APIView):
         } for p in recent_pages]
 
         # My Tasks - Urgent first (High priority), then by due date (earliest first), nulls last
-        my_tasks = Task.objects.filter(assigned_to=request.user).exclude(status='done').annotate(
+        my_tasks = Task.objects.filter(organization=request.user.organization, assigned_to=request.user).exclude(status='done').annotate(
             priority_sort=Case(
                 When(priority='high', then=Value(1)),
                 When(priority='medium', then=Value(2)),
@@ -174,9 +176,31 @@ class DashboardView(APIView):
             'due_date': t.due_date
         } for t in my_tasks]
 
+        # Urgent Tasks (Organization wide, High priority, Not done)
+        urgent_tasks = Task.objects.filter(
+            organization=request.user.organization, 
+            priority='high'
+        ).exclude(status='done').annotate(
+             due_date_sort=Case(
+                When(due_date__isnull=True, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        ).order_by('due_date_sort', 'due_date')[:5]
+        
+        urgent_tasks_data = [{
+            'id': str(t.id),
+            'title': t.title,
+            'status': t.status,
+            'priority': t.priority,
+            'due_date': t.due_date,
+            'assigned_to': f"{t.assigned_to.first_name} {t.assigned_to.last_name}" if t.assigned_to else "Unassigned"
+        } for t in urgent_tasks]
+
+
         # Active Contracts
         from crm.models import Contract
-        active_contracts = Contract.objects.filter(status='active').order_by('end_date')[:5]
+        active_contracts = Contract.objects.filter(organization=request.user.organization, status='active').order_by('end_date')[:5]
         active_contracts_data = [{
             'id': str(c.id),
             'title': c.title,
@@ -200,6 +224,7 @@ class DashboardView(APIView):
 
         six_months_ago = timezone.now() - timedelta(days=180)
         revenue_data = Contract.objects.filter(
+            organization=request.user.organization,
             status='signed', 
             created_at__gte=six_months_ago
         ).annotate(
@@ -216,7 +241,7 @@ class DashboardView(APIView):
         ]
 
         # Analytics - Task Distribution
-        task_counts = Task.objects.values('status').annotate(count=Count('id'))
+        task_counts = Task.objects.filter(organization=request.user.organization).values('status').annotate(count=Count('id'))
         
         TASK_STATUS_FR = {
             'todo': 'À faire',
@@ -233,7 +258,7 @@ class DashboardView(APIView):
         ]
 
         # Analytics - Sales Funnel (Contracts by status)
-        funnel_counts = Contract.objects.values('status').annotate(count=Count('id'))
+        funnel_counts = Contract.objects.filter(organization=request.user.organization).values('status').annotate(count=Count('id'))
         # Order: Draft -> Active -> Signed -> Finished
         status_order = ['draft', 'active', 'signed', 'finished']
         
@@ -255,6 +280,7 @@ class DashboardView(APIView):
         return Response({
             'recent_pages': recent_pages_data,
             'my_tasks': my_tasks_data,
+            'urgent_tasks': urgent_tasks_data,
             'active_contracts': active_contracts_data,
             'analytics': {
                 'revenue': revenue_chart,

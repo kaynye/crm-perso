@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, ExternalLink, Mic, Square } from 'lucide-react';
+import { Send, Loader2, X, ExternalLink, Mic, Square, Paperclip } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 
@@ -9,7 +9,8 @@ interface Message {
     action?: {
         type: string;
         label: string;
-        url: string;
+        url?: string;
+        choices?: { label: string; value: string }[];
     };
 }
 
@@ -91,6 +92,45 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         }
     };
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await api.post('/ai/upload/', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            const fileId = res.data.file_id;
+
+            // Add a message indicating file upload
+            const userMessage: Message = { role: 'user', content: `[Fichier envoyé: ${file.name}]` };
+            setMessages(prev => [...prev, userMessage]);
+
+            // Immediately ask AI to analyze it
+            setMessages(prev => [...prev, { role: 'assistant', content: "J'ai reçu votre fichier. Que souhaitez-vous savoir ?" }]);
+
+            // Store fileId in a hidden way or append it to the next prompt?
+            // A simple way is to append it to the input state so the user sees it ?
+            // Or better, we just know the next message context.
+            // Let's cheat slightly: We set the input to "Analyze this file: <ID>"
+            setInput(`Analyse ce fichier (ID: ${fileId})`);
+
+        } catch (error) {
+            console.error("Upload error", error);
+            alert("Erreur lors de l'envoi du fichier.");
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
 
@@ -151,16 +191,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                             : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none shadow-sm'
                             }`}>
                             <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                            {msg.action && msg.action.type === 'NAVIGATE' && (
+                            {msg.action && msg.action.type === 'NAVIGATE' && msg.action.url && (
                                 <button
                                     onClick={() => {
                                         const currentPath = location.pathname.replace(/\/$/, '');
-                                        const targetPath = msg.action!.url.replace(/\/$/, '');
+                                        const targetPath = msg.action!.url!.replace(/\/$/, '');
 
                                         if (currentPath === targetPath) {
                                             window.location.reload();
                                         } else {
-                                            navigate(msg.action!.url);
+                                            navigate(msg.action!.url!);
                                         }
                                         onClose();
                                     }}
@@ -169,6 +209,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                                     <ExternalLink size={12} />
                                     {msg.action.label}
                                 </button>
+                            )}
+                            {msg.action && msg.action.type === 'CHOICES' && msg.action.choices && (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {msg.action.choices.map((choice, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                setInput(choice.value);
+                                                handleSend();
+                                            }}
+                                            className="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium hover:bg-indigo-200 transition-colors"
+                                        >
+                                            {choice.label}
+                                        </button>
+                                    ))}
+                                </div>
                             )}
                         </div>
                     </div>
@@ -201,6 +257,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                         title={isListening ? "Arrêter" : "Dicter"}
                     >
                         {isListening ? <Square size={18} fill="currentColor" /> : <Mic size={18} />}
+                    </button>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        onChange={handleFileUpload}
+                        accept="image/*,.pdf"
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading || isLoading}
+                        className="p-2 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        title="Envoyer un fichier"
+                    >
+                        {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
                     </button>
                     <button
                         onClick={handleSend}

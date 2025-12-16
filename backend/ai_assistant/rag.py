@@ -24,7 +24,7 @@ class RAGService:
             return notes_raw
 
     @staticmethod
-    def get_context(queries):
+    def get_context(queries, user=None):
         """
         Retrieves relevant context using Vector Search (ChromaDB).
         """
@@ -33,6 +33,10 @@ class RAGService:
             
         from .vector_store import VectorStore
         
+        # Security check
+        if not user or not user.organization:
+             return "Error: User organization not found for context retrieval."
+
         # Combine queries into a single search string for better semantic context
         # or search individually. Let's search individually and aggregate.
         
@@ -43,7 +47,12 @@ class RAGService:
             if len(query) < 2: continue
             
             try:
-                results = VectorStore.search(query, k=5)
+                # Filter by organization_id
+                results = VectorStore.search(
+                    query, 
+                    k=5, 
+                    filter={"organization_id": str(user.organization.id)}
+                )
                 
                 # Chroma returns: {'ids': [['id1', 'id2']], 'documents': [['doc1', 'doc2']], 'metadatas': [[{'source': '...'}, ...]]}
                 documents = results['documents'][0]

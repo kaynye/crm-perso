@@ -38,3 +38,31 @@ class SummarizeView(APIView):
         summary = llm.summarize_text(text)
         
         return Response({'summary': summary})
+        return Response({'summary': summary})
+
+class UploadFileView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        file_obj = request.FILES.get('file')
+        if not file_obj:
+            return Response({'error': 'No file provided'}, status=400)
+            
+        # Save temp file
+        import os
+        from django.conf import settings
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
+        
+        # We'll save it to a temp directory or just default storage 
+        # and return the absolute path/ID.
+        # For simplicity, let's use a hashed name in MEDIA_ROOT
+        
+        path = default_storage.save(f"uploads/{file_obj.name}", ContentFile(file_obj.read()))
+        full_path = os.path.join(settings.MEDIA_ROOT, path)
+        
+        return Response({
+            'file_id': path, # Relative path effectively
+            'full_path': full_path,
+            'message': 'File uploaded successfully'
+        })
