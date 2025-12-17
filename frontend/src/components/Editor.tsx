@@ -44,6 +44,8 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false, holde
 
     const initializedData = useRef<OutputData | null>(data);
 
+    const lastEmittedData = useRef<OutputData | null>(null);
+
     useEffect(() => {
         if (!ref.current) {
             const editor = new EditorJS({
@@ -95,6 +97,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false, holde
                 readOnly: readOnly,
                 async onChange(api) {
                     const savedData = await api.saver.save();
+                    lastEmittedData.current = savedData;
                     onChange(savedData);
                 },
             });
@@ -115,6 +118,10 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false, holde
         if (ref.current && data && data.blocks && data.blocks.length > 0) {
             // If the data is the same as what we initialized with, don't re-render
             if (data === initializedData.current) {
+                return;
+            }
+            // If the data is the same as what we just emitted, don't re-render
+            if (data === lastEmittedData.current) {
                 return;
             }
 
