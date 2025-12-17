@@ -20,6 +20,11 @@ interface ChatContextType {
     setIsLoading: (loading: boolean) => void;
     currentInput: string;
     setCurrentInput: (text: string) => void;
+    pageContext: any;
+    setPageContext: (data: any) => void;
+    conversationId: string | null;
+    setConversationId: React.Dispatch<React.SetStateAction<string | null>>;
+    resetChat: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -69,6 +74,28 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('chat_input', currentInput);
     }, [currentInput]);
 
+    const [conversationId, setConversationId] = useState<string | null>(() => {
+        return localStorage.getItem('chat_conversation_id');
+    });
+
+    const [pageContext, setPageContext] = useState<any>(null);
+
+    // Persist conversationId
+    useEffect(() => {
+        if (conversationId) {
+            localStorage.setItem('chat_conversation_id', conversationId);
+        } else {
+            localStorage.removeItem('chat_conversation_id');
+        }
+    }, [conversationId]);
+
+    const resetChat = () => {
+        setMessages([INITIAL_MESSAGE]);
+        setConversationId(null);
+        localStorage.removeItem('chat_conversation_id');
+        localStorage.removeItem('chat_history');
+    };
+
     return (
         <ChatContext.Provider value={{
             messages,
@@ -78,7 +105,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             isLoading,
             setIsLoading,
             currentInput,
-            setCurrentInput
+            setCurrentInput,
+            pageContext,
+            setPageContext,
+            conversationId,
+            setConversationId,
+            resetChat
         }}>
             {children}
         </ChatContext.Provider>

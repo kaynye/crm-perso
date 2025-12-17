@@ -1,8 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, ExternalLink, Mic, Square, Paperclip, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Loader2, X, ExternalLink, Mic, Square, Paperclip, Bot, User, Sparkles, Trash2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 import { useChat, type Message } from '../../context/ChatContext';
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import remarkGfm from 'remark-gfm';
+import 'highlight.js/styles/github-dark.css';
 
 interface ChatInterfaceProps {
     onClose: () => void;
@@ -19,8 +23,68 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         isLoading,
         setIsLoading,
         currentInput: input,
-        setCurrentInput: setInput
+        setCurrentInput: setInput,
+        pageContext,
+        resetChat,
+        conversationId,
+        setConversationId
     } = useChat();
+
+    // SMART SUGGESTIONS (Chips)
+    const getSuggestions = () => {
+        if (messages.length > 1) return []; // Hide if chat started
+
+        if (pageContext?.source === 'GuestMeetings') {
+            return [
+                { label: '📝 Résumer ces réunions', value: 'Fais-moi un résumé concis de ces réunions.' },
+                { label: '✅ Extraire les tâches', value: 'Y a-t-il des tâches à faire suite à ces réunions ?' },
+                { label: '📅 Prochaine dispo', value: 'Quand est ma prochaine réunion ?' }
+            ];
+        }
+
+        // Default suggestions
+        return [
+            { label: '📅 Mes tâches du jour', value: 'Quelles sont mes tâches pour aujourd\'hui ?' },
+            { label: '📊 Résumé des contrats', value: 'Donne-moi un résumé des contrats récents.' },
+            { label: '📝 Extraire des tâches', value: 'J\'ai des notes de réunion, peux-tu en extraire les tâches ?' },
+            { label: '📧 Rédiger un email', value: 'Aide-moi à rédiger un email client.' }
+        ];
+    };
+
+    const suggestions = getSuggestions();
+
+    // TTS State
+    const [isMuted, setIsMuted] = useState(() => {
+        return localStorage.getItem('chat_muted') === 'true';
+    });
+
+    const speak = (text: string) => {
+        if (isMuted) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 1.1; // Slightly faster
+        window.speechSynthesis.speak(utterance);
+    };
+
+    useEffect(() => {
+        localStorage.setItem('chat_muted', String(isMuted));
+        if (isMuted) {
+            window.speechSynthesis.cancel();
+        }
+    }, [isMuted]);
+
+    // Auto-speak new assistant messages
+    useEffect(() => {
+        if (!isLoading && messages.length > 0) {
+            const lastMsg = messages[messages.length - 1];
+            if (lastMsg.role === 'assistant' && !isMuted) {
+                // Remove markdown symbols for cleaner speech
+                const cleanText = lastMsg.content.replace(/[*#_`]/g, '');
+                speak(cleanText);
+            }
+        }
+    }, [messages, isLoading, isMuted]);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -130,19 +194,82 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         try {
             const apiMessages = [...messages, userMessage].filter(m => m.role !== 'system');
 
-            const response = await api.post('/ai/chat/', {
-                messages: apiMessages,
-                context: {
-                    path: location.pathname
-                }
+            const token = localStorage.getItem('access_token');
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
+            const response = await fetch(`${baseUrl}/ai/chat/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
+                body: JSON.stringify({
+                    messages: apiMessages,
+                    conversation_id: conversationId, // Send ID
+                    context: {
+                        path: location.pathname,
+                        data: pageContext
+                    }
+                })
             });
 
-            const assistantMessage: Message = {
-                role: 'assistant',
-                content: response.data.content,
-                action: response.data.action
-            };
-            setMessages(prev => [...prev, assistantMessage]);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Capture Conversation ID from header if new
+            const newConvId = response.headers.get('X-Conversation-ID');
+            if (newConvId && !conversationId) {
+                setConversationId(newConvId);
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                // Handle JSON Response (Tool Actions)
+                const data = await response.json();
+
+                // Also check body for conversation_id if not in header
+                if (data.conversation_id && !conversationId) {
+                    setConversationId(data.conversation_id);
+                }
+
+                const assistantMessage: Message = {
+                    role: 'assistant',
+                    content: data.content,
+                    action: data.action
+                };
+                setMessages(prev => [...prev, assistantMessage]);
+
+            } else {
+                // Handle Streaming Response (Chat)
+                const reader = response.body?.getReader();
+                const decoder = new TextDecoder();
+
+                if (!reader) throw new Error("No readable stream");
+
+                // Initialize empty assistant message
+                setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+                let fullContent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    fullContent += chunk;
+
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        const lastMsg = newMessages[newMessages.length - 1];
+                        if (lastMsg.role === 'assistant') {
+                            lastMsg.content = fullContent;
+                        }
+                        return newMessages;
+                    });
+                }
+            }
+
         } catch (error) {
             console.error("Failed to send message", error);
             setMessages(prev => [...prev, { role: 'assistant', content: "Désolé, une erreur est survenue. Veuillez réessayer." }]);
@@ -150,35 +277,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
             setIsLoading(false);
             scrollToBottom();
         }
-    };
-
-    // Helper to format text with bold and newlines
-    const formatContent = (text: string) => {
-        return text.split('\n').map((line, i) => {
-            // Handle bullet points
-            if (line.trim().startsWith('- ')) {
-                return (
-                    <li key={i} className="ml-4 list-disc pl-1 mb-1">
-                        {parseBold(line.substring(2))}
-                    </li>
-                );
-            }
-            return (
-                <div key={i} className={`min-h-[1.2em] ${line.trim() === '' ? 'h-2' : ''}`}>
-                    {parseBold(line)}
-                </div>
-            );
-        });
-    };
-
-    const parseBold = (text: string) => {
-        const parts = text.split(/(\*\*.*?\*\*)/g);
-        return parts.map((part, index) => {
-            if (part.startsWith('**') && part.endsWith('**')) {
-                return <strong key={index} className="font-semibold text-indigo-900">{part.slice(2, -2)}</strong>;
-            }
-            return part;
-        });
     };
 
     return (
@@ -197,13 +295,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                         </div>
                     </div>
                 </div>
-                <button
-                    onClick={onClose}
-                    className="hover:bg-white/20 p-2 rounded-full transition-colors duration-200"
-                    aria-label="Fermer"
-                >
-                    <X size={24} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => {
+                            if (confirm('Voulez-vous vraiment effacer la conversation ?')) {
+                                resetChat();
+                            }
+                        }}
+                        className="hover:bg-white/20 p-2 rounded-full transition-colors duration-200"
+                        title="Nouvelle conversation"
+                    >
+                        <Trash2 size={20} />
+                    </button>
+                    <button
+                        onClick={() => setIsMuted(!isMuted)}
+                        className="hover:bg-white/20 p-2 rounded-full transition-colors duration-200"
+                        title={isMuted ? "Activer la voix" : "Couper la voix"}
+                    >
+                        {isMuted ? <Bot size={20} className="opacity-50" /> : <Bot size={20} />}
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="hover:bg-white/20 p-2 rounded-full transition-colors duration-200"
+                        aria-label="Fermer"
+                    >
+                        <X size={24} />
+                    </button>
+                </div>
             </div>
 
             {/* Messages Area */}
@@ -237,8 +355,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                                     {isUser ? (
                                         <div className="whitespace-pre-wrap">{msg.content}</div>
                                     ) : (
-                                        <div className="space-y-1">
-                                            {formatContent(msg.content)}
+                                        <div className="prose prose-sm max-w-none prose-indigo prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5">
+                                            <ReactMarkdown
+                                                rehypePlugins={[rehypeHighlight]}
+                                                remarkPlugins={[remarkGfm]}
+                                                components={{
+                                                    table: ({ node, ...props }) => <table className="border-collapse table-auto w-full text-sm my-4" {...props} />,
+                                                    th: ({ node, ...props }) => <th className="border border-gray-200 px-3 py-2 bg-gray-50 text-left font-semibold" {...props} />,
+                                                    td: ({ node, ...props }) => <td className="border border-gray-200 px-3 py-2" {...props} />,
+                                                }}
+                                            >
+                                                {msg.content}
+                                            </ReactMarkdown>
                                         </div>
                                     )}
                                 </div>
@@ -264,10 +392,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                                                 <span>{msg.action.label}</span>
                                             </button>
                                         )}
-
-                                        {msg.action.type === 'CHOICES' && msg.action.choices && (
+                                        {msg.action.type === 'CHOICES' && (
                                             <div className="flex flex-wrap gap-2">
-                                                {msg.action.choices.map((choice, idx) => (
+                                                {((index === 0 ? suggestions : msg.action?.choices) || []).map((choice, idx) => (
                                                     <button
                                                         key={idx}
                                                         onClick={() => {
@@ -295,8 +422,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                     );
                 })}
 
-                {/* Loading / Typing Indicator */}
-                {isLoading && (
+                {/* Loading Indicator (Only show if still buffering or initial connect) */}
+                {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                     <div className="flex items-end gap-2 justify-start">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center border border-indigo-50 shadow-sm mb-1 flex-shrink-0">
                             <Sparkles size={14} className="text-indigo-600" />
@@ -313,7 +440,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
 
             {/* Input Area */}
             <div className="p-4 bg-white border-t border-gray-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10 safe-bottom">
-                {/* Suggestions if needed could go here */}
                 <div className="flex gap-2 items-end bg-gray-50 p-1.5 rounded-2xl border border-gray-200 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-300 transition-all">
 
                     {/* Attachment Button */}

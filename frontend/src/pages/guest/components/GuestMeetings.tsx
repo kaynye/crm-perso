@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, X } from 'lucide-react';
-import api from '../../../api/axios';
-import { edjsParser, editorStyles } from '../utils/parsers';
+import { useChat } from '../../../context/ChatContext';
+
+// ... (existing code, handled by surrounding context in replace) ...
+// Actually, I need to add the import at the top, and then the hook usage.
+// I cannot do both in one REPLACE call if they are far apart.
+// I will split this into two calls. First, import.
+
 
 import EditorJS from '@editorjs/editorjs';
 // @ts-ignore
@@ -244,9 +247,30 @@ const GuestMeetings: React.FC<{ token: string, canPropose: boolean, authPassword
             .finally(() => setLoading(false));
     };
 
+    const { setPageContext } = useChat();
+
     useEffect(() => {
         fetchMeetings();
     }, [token, authPassword]);
+
+    // Deep Context Injection
+    useEffect(() => {
+        if (!loading && meetings.length > 0) {
+            setPageContext({
+                source: 'GuestMeetings',
+                data: meetings.map(m => ({
+                    id: m.id,
+                    title: m.title,
+                    date: m.date,
+                    type: m.type,
+                    // Limit notes size to avoid blowing up context
+                    has_notes: !!m.notes
+                }))
+            });
+        }
+
+        return () => setPageContext(null); // Cleanup on unmount
+    }, [meetings, loading, setPageContext]);
 
     if (loading) return <div className="p-4 text-center text-gray-500">Chargement des réunions...</div>;
 

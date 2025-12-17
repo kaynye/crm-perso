@@ -38,35 +38,36 @@ class LLMService:
             
         self.model = self.conf.get('MODEL', 'gpt-3.5-turbo')
 
-    def run_agent(self, messages, page_context=None, user=None):
+    def run_agent(self, messages, page_context=None, user=None, stream=False):
         """
         Main entry point. Decides whether to use a Tool or perform RAG Search.
         """
         last_user_msg = next((m['content'] for m in reversed(messages) if m['role'] == 'user'), "")
         
-        # 1. Retrieve Context (RAG) - ALWAYS run this to give the agent knowledge
+        # 1. Retrieve Context (RAG)
         search_terms = self.extract_entities(last_user_msg)
         rag_context = RAGService.get_context(search_terms, user=user)
-        # rag_context = "" # RAG Disabled for now as per user request
         
-        # 2. Intent Detection (with Context)
+        # 2. Intent Detection
         intent = self._detect_intent(last_user_msg, page_context, rag_context)
         print(f"DEBUG: Detected Intent: {intent}")
         
         tool_name = intent.get('tool')
         params = intent.get('params', {})
         
-        # 3. Execute Tool if applicable
+        # 3. Execute Tool if applicable (Tools are NOT streamed for now)
         if tool_name and tool_name != 'SEARCH':
             result = self._execute_tool(tool_name, params, last_user_msg, user, rag_context)
-            # If result is a dict (structured action), return it
             if isinstance(result, dict):
                 return result
-            # If string, wrap it
             return {"content": str(result)}
             
-        # 4. Fallback to Chat (using the already fetched context)
-        return {"content": self.chat(messages, rag_context)}
+        # 4. Fallback to Chat (Streamable)
+        return self.chat(messages, rag_context, stream=stream)
+
+
+
+
 
     def _detect_intent(self, query, page_context=None, rag_context=""):
         """
@@ -95,6 +96,15 @@ class LLMService:
                      context_str = f"USER IS VIEWING CONTRACT: {c.title} (ID: {cid})"
                  except:
                      pass
+        
+        # Inject Deep Page Context (Data from frontend)
+        if page_context and page_context.get('data'):
+             import json
+             try:
+                 data_str = json.dumps(page_context['data'], ensure_ascii=False, indent=2)
+                 context_str += f"\n\n[DEEP PAGE CONTEXT - VISIBLE DATA]:\n{data_str}\n"
+             except:
+                 pass
 
         from django.utils import timezone
         CURRENT_DATE = timezone.localtime().strftime('%Y-%m-%d %H:%M')
@@ -279,7 +289,7 @@ class LLMService:
         # 3. Generate Answer
         return self.chat(messages, context)
 
-    def chat(self, messages, context="", system_override=None):
+    def chat(self, messages, context="", system_override=None, stream=False):
         """
         Sends messages to the LLM and returns the response.
         """
@@ -303,16 +313,14 @@ class LLMService:
             """
 
         # Prepend system prompt
-        # If messages already has system, replace it? Or just prepend.
-        # Usually frontend sends user/assistant history.
         full_messages = [{'role': 'system', 'content': system_prompt}] + messages
 
         if self.provider == 'gemini':
-            return self._chat_gemini(full_messages)
+            return self._chat_gemini(full_messages, stream=stream)
         else:
-            return self._chat_openai(full_messages)
+            return self._chat_openai(full_messages, stream=stream)
 
-    def _chat_openai(self, messages):
+    def _chat_openai(self, messages, stream=False):
         client = OpenAI(
             api_key=self.api_key or 'dummy',
             base_url=self.base_url
@@ -321,13 +329,27 @@ class LLMService:
         try:
             response = client.chat.completions.create(
                 model=self.model,
-                messages=messages
+                messages=messages,
+                stream=stream
             )
-            return response.choices[0].message.content
+            
+            if stream:
+                def generate():
+                    for chunk in response:
+                        if chunk.choices[0].delta.content:
+                            yield chunk.choices[0].delta.content
+                return generate()
+            else:
+                return response.choices[0].message.content
         except Exception as e:
-            return f"Error communicating with AI: {str(e)}"
+            err = f"Error communicating with AI: {str(e)}"
+            if stream:
+                def generate_err():
+                    yield err
+                return generate_err()
+            return err
 
-    def _chat_gemini(self, messages):
+    def _chat_gemini(self, messages, stream=False):
         if not genai:
             return "Error: google-generativeai package is not installed."
 
@@ -343,10 +365,22 @@ class LLMService:
         prompt = f"{system_msg}\n\nUser: {last_user_msg}"
         
         try:
-            response = model.generate_content(prompt)
-            return response.text
+            response = model.generate_content(prompt, stream=stream)
+            
+            if stream:
+                def generate():
+                    for chunk in response:
+                        yield chunk.text
+                return generate()
+            else:
+                return response.text
         except Exception as e:
-            return f"Error communicating with Gemini: {str(e)}"
+            err = f"Error communicating with Gemini: {str(e)}"
+            if stream:
+                def generate_err():
+                    yield err
+                return generate_err()
+            return err
 
     def extract_entities(self, query):
         """
