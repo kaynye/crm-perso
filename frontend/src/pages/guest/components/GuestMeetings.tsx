@@ -1,10 +1,11 @@
+import React, { useState, useEffect } from 'react';
+import api from '../../../api/axios';
+import { X, Plus } from 'lucide-react';
 import { useChat } from '../../../context/ChatContext';
+import edjsHTML from 'editorjs-html';
 
-// ... (existing code, handled by surrounding context in replace) ...
-// Actually, I need to add the import at the top, and then the hook usage.
-// I cannot do both in one REPLACE call if they are far apart.
-// I will split this into two calls. First, import.
-
+const edjsParser = edjsHTML();
+const editorStyles = "prose-headings:mb-2 prose-h2:text-lg prose-h2:font-bold prose-p:text-gray-600 prose-p:my-1 prose-ul:my-2 prose-li:my-0";
 
 import EditorJS from '@editorjs/editorjs';
 // @ts-ignore
@@ -122,7 +123,7 @@ const MeetingProposeModal: React.FC<{ token: string, authPassword?: string | nul
         setSelectedTemplate(tplId);
         if (!tplId) return;
 
-        const tpl = templates.find(t => t.id === tplId);
+        const tpl = templates.find((t: any) => t.id === tplId);
         if (tpl && tpl.content && editorRef.current) {
             try {
                 const content = JSON.parse(tpl.content);
@@ -201,7 +202,7 @@ const MeetingProposeModal: React.FC<{ token: string, authPassword?: string | nul
                                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                                 >
                                     <option value="">-- Sélectionner un modèle --</option>
-                                    {templates.map(t => (
+                                    {templates.map((t: any) => (
                                         <option key={t.id} value={t.id}>{t.name}</option>
                                     ))}
                                 </select>
@@ -238,7 +239,7 @@ const GuestMeetings: React.FC<{ token: string, canPropose: boolean, authPassword
         if (authPassword) headers['X-Shared-Link-Password'] = authPassword;
 
         api.get(`/crm/public/meetings/?token=${token}`, { headers })
-            .then(res => {
+            .then((res: any) => {
                 if (Array.isArray(res.data)) setMeetings(res.data);
                 else if (res.data.results) setMeetings(res.data.results);
                 else setMeetings([]);
@@ -258,7 +259,7 @@ const GuestMeetings: React.FC<{ token: string, canPropose: boolean, authPassword
         if (!loading && meetings.length > 0) {
             setPageContext({
                 source: 'GuestMeetings',
-                data: meetings.map(m => ({
+                data: meetings.map((m: any) => ({
                     id: m.id,
                     title: m.title,
                     date: m.date,
@@ -288,7 +289,7 @@ const GuestMeetings: React.FC<{ token: string, canPropose: boolean, authPassword
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {meetings.map(meeting => (
+                {meetings.map((meeting: any) => (
                     <div
                         key={meeting.id}
                         onClick={() => setSelectedMeeting(meeting)}
