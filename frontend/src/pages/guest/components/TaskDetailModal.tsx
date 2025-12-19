@@ -7,8 +7,8 @@ const TaskDetailModal: React.FC<{ task: any, onClose: () => void }> = ({ task, o
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-in">
-                <div className="p-6 md:p-8">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-in max-h-[90vh] flex flex-col">
+                <div className="p-6 md:p-8 overflow-y-auto">
                     <div className="flex justify-between items-start mb-6">
                         <div>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide mb-2 ${task.status === 'done' ? 'bg-green-100 text-green-800' :
