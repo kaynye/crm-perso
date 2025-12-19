@@ -13,11 +13,12 @@ const customParsers = {
     },
     list: (block: any) => {
         const type = block.data.style === 'ordered' ? 'ol' : 'ul';
+        const listClass = block.data.style === 'ordered' ? 'list-decimal pl-5' : 'list-disc pl-5';
         const items = block.data.items.map((item: any) => {
             const text = typeof item === 'string' ? item : (item.content || item.text || '');
             return `<li>${text}</li>`;
         }).join('');
-        return `<${type}>${items}</${type}>`;
+        return `<${type} class="${listClass}">${items}</${type}>`;
     },
     checklist: (block: any) => {
         const items = block.data.items.map((item: any) =>
