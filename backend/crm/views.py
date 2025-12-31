@@ -6,8 +6,13 @@ from core.mixins import OrganizationScopeMixin
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Company, Contact, Contract, Meeting, Document, MeetingTemplate, SharedLink
-from .serializers import CompanySerializer, ContactSerializer, ContractSerializer, MeetingSerializer, DocumentSerializer, MeetingTemplateSerializer, SharedLinkSerializer
+from .models import Company, Contact, Contract, Meeting, Document, MeetingTemplate, SharedLink, ContractTemplate
+from .serializers import CompanySerializer, ContactSerializer, ContractSerializer, MeetingSerializer, DocumentSerializer, MeetingTemplateSerializer, SharedLinkSerializer, ContractTemplateSerializer
+
+class ContractTemplateViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
+    queryset = ContractTemplate.objects.all()
+    serializer_class = ContractTemplateSerializer
+    permission_classes = [HasGeminiSecret]
 
 class CompanyViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
     queryset = Company.objects.all()
@@ -35,6 +40,12 @@ class ContractViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
 
     filterset_fields = ['company', 'status']
+
+    def perform_create(self, serializer):
+        serializer.save(
+            organization=self.request.user.organization,
+            created_by=self.request.user
+        )
 
 class MeetingViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
     queryset = Meeting.objects.all()

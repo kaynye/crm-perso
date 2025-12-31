@@ -11,6 +11,7 @@ from django.db.models import Q, Case, When, Value, IntegerField
 from pages.models import Page
 from crm.models import Company, Contact
 from tasks.models import Task
+from django.contrib.auth import get_user_model
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     permission_classes = (AllowAny,)
@@ -290,10 +291,11 @@ class DashboardView(APIView):
         })
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    from django.contrib.auth import get_user_model
-    queryset = get_user_model().objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return get_user_model().objects.filter(organization=self.request.user.organization)
 
     @action(detail=False, methods=['get'])
     def me(self, request):

@@ -31,12 +31,13 @@ export const generatePDF = ({ title, contentHTML, metadata, filename }: PDFGener
     // Styles to inject into the isolated iframe
     const styles = `
         @media print {
-            @page { margin: 2cm; }
+            @page {  }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
         body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; color: #111; line-height: 1.5; }
         .pdf-container {
             padding: 40px; 
+            padding-top: 20px; 
             max-width: 800px;
             margin: 0 auto;
         }
@@ -70,7 +71,7 @@ export const generatePDF = ({ title, contentHTML, metadata, filename }: PDFGener
         </head>
         <body>
             <div class="pdf-container">
-                <h1>${title}</h1>
+                ${title ? `<h1>${title}</h1>` : ''}
                 ${metadata ? `<div class="metadata">${metadata}</div>` : ''}
                 <div class="content">
                     ${contentHTML}

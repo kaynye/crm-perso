@@ -265,6 +265,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             </div>
                         </div>
                     </div>
+                    <div>
+                        <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Outils</div>
+                        <div className="space-y-0.5">
+                            <div onClick={() => navigate('/automation/rules')} className="flex items-center px-2 py-1.5 text-sm text-gray-300 hover:bg-zinc-800 hover:text-white cursor-pointer rounded-md transition-colors">
+                                <span className="truncate">Automatisations</span>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* Pages Section */}
                     <div>

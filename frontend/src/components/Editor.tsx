@@ -8,8 +8,9 @@ import MentionModal from './MentionModal';
 import AttachesTool from './editor-tools/AttachesTool';
 import Delimiter from '@editorjs/delimiter';
 import Checklist from '@editorjs/checklist';
-
 import Table from '@editorjs/table';
+import PageBreak from './editor-tools/PageBreakTool';
+import Paragraph from '@editorjs/paragraph';
 import { useNavigate } from 'react-router-dom';
 
 interface EditorProps {
@@ -43,7 +44,6 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false, holde
     }, [popover]);
 
     const initializedData = useRef<OutputData | null>(data);
-
     const lastEmittedData = useRef<OutputData | null>(null);
 
     useEffect(() => {
@@ -51,6 +51,13 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false, holde
             const editor = new EditorJS({
                 holder: holderId,
                 tools: {
+                    paragraph: {
+                        class: Paragraph as any,
+                        inlineToolbar: true,
+                        config: {
+                            preserveBlank: true
+                        }
+                    },
                     header: {
                         class: Header as any,
                         config: {
@@ -83,6 +90,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false, holde
                     },
                     database: DatabaseTool,
                     attaches: AttachesTool,
+                    pageBreak: PageBreak,
                     table: {
                         class: Table as any,
                         inlineToolbar: true,

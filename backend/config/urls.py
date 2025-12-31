@@ -13,6 +13,7 @@ urlpatterns = [
     path('api/databases/', include('databases.urls')),
     path('api/ai/', include('ai_assistant.urls')),
     path('api/integrations/', include('integrations.urls')),
+    path('api/automation/', include('automation.urls')),
 ]
 
 if settings.DEBUG:

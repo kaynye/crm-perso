@@ -43,6 +43,17 @@ const tableConfig = {
     // Delimiter
     delimiter: () => {
         return `<hr style="margin: 24px 0; border: none; border-top: 1px solid #e5e7eb; width: 100%;" />`;
+    },
+    // Page Break
+    pageBreak: () => {
+        return `<div style="page-break-before: always; break-before: page; height: 1px; margin: 0; border: none;"></div>`;
+    },
+    // Paragraph - Custom parser to preserve empty lines
+    paragraph: (block: any) => {
+        if (!block.data.text || block.data.text.trim() === '') {
+            return '<p style="margin-bottom: 1em; min-height: 1em;">&nbsp;</p>';
+        }
+        return `<p>${block.data.text}</p>`;
     }
 };
 

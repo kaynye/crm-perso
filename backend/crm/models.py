@@ -56,12 +56,29 @@ class Contract(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     file = models.FileField(upload_to='contracts/', null=True, blank=True)
     extracted_text = models.TextField(blank=True, null=True)
+    content = models.JSONField(default=dict, blank=True, help_text="EditorJS content")
     organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, related_name='contracts')
+    created_by = models.ForeignKey('core.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_contracts')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+class ContractTemplate(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    content = models.JSONField(default=dict, blank=True, help_text="EditorJS structure")
+    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, related_name='contract_templates')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
 
 class Meeting(models.Model):
     TYPE_CHOICES = (

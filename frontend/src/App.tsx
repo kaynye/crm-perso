@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import AutomationList from './pages/automation/AutomationList';
+import AutomationForm from './pages/automation/AutomationForm';
 import Login from './pages/Login';
 import Layout from './components/Layout';
 import PageDetail from './pages/PageDetail';
@@ -61,6 +63,9 @@ const AppRoutes: React.FC = () => {
         <Route path="tasks" element={<TaskBoard />} />
         <Route path="documents" element={<DocumentManager />} />
         <Route path="meeting-templates" element={<MeetingTemplates />} />
+        <Route path="automation/rules" element={<AutomationList />} />
+        <Route path="automation/rules/new" element={<AutomationForm />} />
+        <Route path="automation/rules/:id" element={<AutomationForm />} />
         <Route path="databases/:id" element={<DatabaseView />} />
         <Route path="profile" element={<Profile />} />
         <Route path="profile" element={<Profile />} />

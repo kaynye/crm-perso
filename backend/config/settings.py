@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'ai_assistant',
     'django_filters',
     'integrations',
+    'automation',
 ]
 
 MIDDLEWARE = [

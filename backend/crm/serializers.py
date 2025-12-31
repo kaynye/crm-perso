@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Company, Contact, Contract, Meeting, Document, MeetingTemplate, SharedLink
+from .models import Company, Contact, Contract, Meeting, Document, MeetingTemplate, SharedLink, ContractTemplate
 from core.validators import validate_cross_organization_reference
 
 class ContactSerializer(serializers.ModelSerializer):
@@ -17,9 +17,39 @@ class ContactSerializer(serializers.ModelSerializer):
 
 class ContractSerializer(serializers.ModelSerializer):
     company_name = serializers.ReadOnlyField(source='company.name')
-    
+    organization_details = serializers.SerializerMethodField()
+    created_by_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Contract
+        fields = '__all__'
+        read_only_fields = ['organization']
+
+    def get_organization_details(self, obj):
+        return {
+            'name': obj.organization.name,
+            'legal_name': obj.organization.legal_name,
+            'logo': obj.organization.logo.url if obj.organization.logo else None,
+            'siret': obj.organization.siret,
+            'vat_number': obj.organization.vat_number,
+            'address_billing': obj.organization.address_billing,
+        }
+    
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.username
+        return None
+
+    def validate(self, data):
+        validate_cross_organization_reference(
+            self.context['request'].user,
+            company=data.get('company')
+        )
+        return data
+
+class ContractTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContractTemplate
         fields = '__all__'
         read_only_fields = ['organization']
 
