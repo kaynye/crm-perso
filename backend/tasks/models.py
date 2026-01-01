@@ -32,6 +32,7 @@ class Task(models.Model):
     tags = models.CharField(max_length=255, blank=True)
     category = models.CharField(max_length=100, blank=True)
     organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, related_name='tasks')
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_tasks')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

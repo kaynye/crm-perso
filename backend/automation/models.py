@@ -24,16 +24,33 @@ class AutomationRule(models.Model):
     trigger_model = models.CharField(max_length=50, choices=TRIGGER_MODELS)
     trigger_event = models.CharField(max_length=50, choices=TRIGGER_EVENTS)
     
-    # Condition (Simple for now: field == value)
-    condition_field = models.CharField(max_length=100, blank=True, help_text="Field to check, e.g., 'status'")
-    condition_value = models.CharField(max_length=100, blank=True, help_text="Value to match, e.g., 'done'")
+    # Advanced Conditions (JSON List): [{ "field": "status", "operator": "equals", "value": "done" }]
+    conditions = models.JSONField(default=list, blank=True, help_text="List of conditions (AND logic)")
     
-    # Action
-    action_type = models.CharField(max_length=50, choices=ACTION_TYPES)
-    action_config = models.JSONField(default=dict, help_text="Configuration for the action (recipient, templates, etc.)")
+    # Actions (JSON List): [{ "type": "create_task", "config": {...} }]
+    actions = models.JSONField(default=list, help_text="List of actions to execute")
     
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.name} ({self.organization})"
+
+class AutomationLog(models.Model):
+    STATUS_CHOICES = (
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+        ('partial', 'Partial Success'),
+    )
+    
+    rule = models.ForeignKey(AutomationRule, on_delete=models.CASCADE, related_name='logs')
+    # Link to the object that triggered it (Generic relation would be best, but simple string for now is easier for logs)
+    target_model = models.CharField(max_length=50) # e.g. 'task'
+    target_id = models.CharField(max_length=50)    # e.g. UUID
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    details = models.TextField(blank=True, help_text="Log details or error message")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']

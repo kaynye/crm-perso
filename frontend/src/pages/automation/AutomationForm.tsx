@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/axios';
-import { ArrowLeft, Save, Trash2, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import ConditionsBuilder from './components/ConditionsBuilder';
+import ActionsBuilder from './components/ActionsBuilder';
 
 const AutomationForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -12,18 +14,11 @@ const AutomationForm: React.FC = () => {
         name: '',
         trigger_model: 'task',
         trigger_event: 'create',
-        condition_field: '',
-        condition_value: '',
-        action_type: 'send_email',
-        action_config: {} as any,
+        conditions: [] as any[],
+        actions: [] as any[],
         is_active: true
     });
-    const [actionConfig, setActionConfig] = useState({
-        recipient_id: '',
-        assigned_to_id: '',
-        subject: '',
-        template: ''
-    });
+
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
@@ -31,29 +26,12 @@ const AutomationForm: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch company users for assignment/email
-                // Assuming we have an endpoint for this or we filter contacts? 
-                // Ideally we want organization members (Users)
-                // For now let's try to fetch users from a hypothetical endpoint or just use a mock if not available
-                // We'll try to fetch all users in the organization
-                // The endpoint '/api/admin/users/' might be restricted. Let's see if we can use something else or if the user is admin.
-                // If not, we might need to expose organization members.
-                // Let's assume there is a way to get "Assignees" similar to task assignment.
-                // Checking TaskDetail we usually fetch 'contacts' or 'users'.
-                // Let's try fetching users (if admin) or just rely on manual entry for now if fails.
-
-                // NOTE: In a real scenario, I would check with the user or backend if there's a specific endpoint for "Organization Users".
-                // Based on previous chats, there is likely a User model.
                 try {
-                    // Try to fetch organization users if possible, or contacts?
-                    // Let's iterate on this. For now, empty list or maybe contacts?
-                    // Actually, for "send_email", we might want to email a specific USER or CONTACT.
-                    // For "create_task", we assign to a USER.
-                    const usersRes = await api.get('/users/'); // This works with UserViewSet
+                    const usersRes = await api.get('/users/');
                     if (usersRes.data.results) setUsers(usersRes.data.results);
                     else if (Array.isArray(usersRes.data)) setUsers(usersRes.data);
                 } catch (e) {
-                    console.warn("Could not fetch users, maybe not admin", e);
+                    console.warn("Could not fetch users", e);
                 }
 
                 if (isEditMode) {
@@ -63,13 +41,10 @@ const AutomationForm: React.FC = () => {
                         name: rule.name,
                         trigger_model: rule.trigger_model,
                         trigger_event: rule.trigger_event,
-                        condition_field: rule.condition_field || '',
-                        condition_value: rule.condition_value || '',
-                        action_type: rule.action_type,
-                        action_config: rule.action_config,
+                        conditions: rule.conditions || [],
+                        actions: rule.actions || [],
                         is_active: rule.is_active
                     });
-                    setActionConfig(rule.action_config || {});
                 }
             } catch (error) {
                 console.error("Failed to load data", error);
@@ -84,16 +59,11 @@ const AutomationForm: React.FC = () => {
         e.preventDefault();
         setLoading(true);
 
-        const payload = {
-            ...formData,
-            action_config: actionConfig
-        };
-
         try {
             if (isEditMode) {
-                await api.patch(`/automation/rules/${id}/`, payload);
+                await api.patch(`/automation/rules/${id}/`, formData);
             } else {
-                await api.post('/automation/rules/', payload);
+                await api.post('/automation/rules/', formData);
             }
             navigate('/automation/rules');
         } catch (error) {
@@ -118,7 +88,7 @@ const AutomationForm: React.FC = () => {
     if (initialLoading) return <div className="p-8">Chargement...</div>;
 
     return (
-        <div className="max-w-3xl mx-auto p-8">
+        <div className="max-w-4xl mx-auto p-8 pb-32">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
                     <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-600">
@@ -139,41 +109,43 @@ const AutomationForm: React.FC = () => {
                 )}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
                 {/* General Info */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-                    <h2 className="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">Informations Générales</h2>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la règle</label>
-                        <input
-                            type="text"
-                            required
-                            value={formData.name}
-                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            placeholder="ex: Email de bienvenue nouveau client"
-                        />
+                <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+                    <h2 className="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">1. Informations</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la règle</label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.name}
+                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                placeholder="ex: Email de bienvenue"
+                            />
+                        </div>
+                        <div className="flex items-center pt-6">
+                            <input
+                                type="checkbox"
+                                id="is_active"
+                                checked={formData.is_active}
+                                onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
+                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
+                                Règle active
+                            </label>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            id="is_active"
-                            checked={formData.is_active}
-                            onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
-                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
-                            Règle active
-                        </label>
-                    </div>
-                </div>
+                </section>
 
                 {/* Trigger */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-                    <h2 className="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">Déclencheur</h2>
-                    <div className="grid grid-cols-2 gap-6">
+                <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+                    <h2 className="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">2. Déclencheur</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Modèle</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Modèle Cible</label>
                             <select
                                 value={formData.trigger_model}
                                 onChange={e => setFormData({ ...formData, trigger_model: e.target.value })}
@@ -197,121 +169,48 @@ const AutomationForm: React.FC = () => {
                             </select>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* Condition */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <h2 className="text-lg font-medium text-gray-900">Condition (Optionnel)</h2>
-                        <span className="text-xs text-gray-500">Laisser vide pour exécuter toujours</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Champ</label>
-                            <input
-                                type="text"
-                                value={formData.condition_field}
-                                onChange={e => setFormData({ ...formData, condition_field: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                placeholder="ex: status"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Valeur</label>
-                            <input
-                                type="text"
-                                value={formData.condition_value}
-                                onChange={e => setFormData({ ...formData, condition_value: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                placeholder="ex: completed"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Action */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-                    <h2 className="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">Action</h2>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Type d'action</label>
-                        <select
-                            value={formData.action_type}
-                            onChange={e => setFormData({ ...formData, action_type: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        >
-                            <option value="send_email">Envoyer un email</option>
-                            <option value="create_task">Créer une tâche</option>
-                            {/* <option value="update_field">Mettre à jour un champ</option> */}
-                        </select>
+                {/* Conditions (Advanced) */}
+                <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+                    <div className="border-b border-gray-100 pb-2">
+                        <h2 className="text-lg font-medium text-gray-900">3. Conditions (Optionnel)</h2>
+                        <p className="text-sm text-gray-500 mt-1">La règle s'exécutera seulement si TOUTES ces conditions sont remplies.</p>
                     </div>
 
-                    {/* Action Config */}
-                    <div className="p-4 bg-gray-50 rounded-lg space-y-4">
-                        {formData.action_type === 'send_email' && (
-                            <>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Destinataire (Utilisateur)</label>
-                                    <select
-                                        value={actionConfig.recipient_id}
-                                        onChange={e => setActionConfig({ ...actionConfig, recipient_id: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    >
-                                        <option value="">Sélectionner un utilisateur...</option>
-                                        {users.map(u => (
-                                            <option key={u.id} value={u.id}>{u.first_name} {u.last_name} ({u.email})</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Sujet</label>
-                                    <input
-                                        type="text"
-                                        value={actionConfig.subject}
-                                        onChange={e => setActionConfig({ ...actionConfig, subject: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    />
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                    Le contenu de l'email sera généré automatiquement (pour l'instant).
-                                </div>
-                            </>
-                        )}
+                    <ConditionsBuilder
+                        conditions={formData.conditions}
+                        onChange={conds => setFormData({ ...formData, conditions: conds })}
+                    />
+                </section>
 
-                        {formData.action_type === 'create_task' && (
-                            <>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Assigner à</label>
-                                    <select
-                                        value={actionConfig.assigned_to_id}
-                                        onChange={e => setActionConfig({ ...actionConfig, assigned_to_id: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    >
-                                        <option value="">Sélectionner un utilisateur...</option>
-                                        {users.map(u => (
-                                            <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Titre de la tâche</label>
-                                    <input
-                                        type="text"
-                                        value={actionConfig.subject}
-                                        onChange={e => setActionConfig({ ...actionConfig, subject: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                        placeholder="ex: Faire un suivi"
-                                    />
-                                </div>
-                            </>
-                        )}
+                {/* Actions (Multiple) */}
+                <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+                    <div className="border-b border-gray-100 pb-2">
+                        <h2 className="text-lg font-medium text-gray-900">4. Actions</h2>
+                        <p className="text-sm text-gray-500 mt-1">Liste des actions à exécuter en séquence.</p>
                     </div>
-                </div>
 
-                <div className="flex justify-end pt-4 border-t border-gray-100">
+                    <ActionsBuilder
+                        actions={formData.actions}
+                        onChange={acts => setFormData({ ...formData, actions: acts })}
+                        users={users}
+                        triggerModel={formData.trigger_model}
+                    />
+                </section>
+
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/automation/rules')}
+                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-50"
+                    >
+                        Annuler
+                    </button>
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 disabled:opacity-50"
+                        className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 disabled:opacity-50 shadow-sm"
                     >
                         <Save size={18} />
                         {loading ? 'Enregistrement...' : 'Enregistrer la règle'}
