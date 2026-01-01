@@ -1,5 +1,6 @@
 backend/venv
 backend/venv/*
+backend/.model_cache
 node_modules
 node_modules/*
 */node_modules

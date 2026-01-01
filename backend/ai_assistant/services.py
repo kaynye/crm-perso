@@ -15,7 +15,9 @@ from .tools.meetings import MeetingTools
 from .tools.analytics import AnalyticsTools
 from .tools.content import ContentTools
 from .tools.email_tools import EmailTools
+from .tools.email_tools import EmailTools
 from .tools.vision import VisionTools
+from .prompt_schemas import TOOLS_SCHEMA
 
 class LLMService:
     def __init__(self):
@@ -45,7 +47,9 @@ class LLMService:
         last_user_msg = next((m['content'] for m in reversed(messages) if m['role'] == 'user'), "")
         
         # 1. Retrieve Context (RAG)
-        search_terms = self.extract_entities(last_user_msg)
+        # Using full message for Hybrid Search is often better than just entities
+        search_terms = last_user_msg 
+        # search_terms = self.extract_entities(last_user_msg) # Old way
         rag_context = RAGService.get_context(search_terms, user=user)
         
         # 2. Intent Detection
@@ -58,6 +62,16 @@ class LLMService:
         # 3. Execute Tool if applicable (Tools are NOT streamed for now)
         if tool_name and tool_name != 'SEARCH':
             result = self._execute_tool(tool_name, params, last_user_msg, user, rag_context)
+            
+            # Special Handling for explicit RAG Search requested by the tool
+            if isinstance(result, dict) and result.get('type') == 'RAG_SEARCH':
+                 refined_query = result.get('query')
+                 print(f"DEBUG: Performing Refined RAG Search with query: {refined_query}")
+                 # Re-fetch context with the refined query
+                 refined_rag_context = RAGService.get_context(refined_query, user=user)
+                 # Proceed to Chat with this new context
+                 return self.chat(messages, refined_rag_context, stream=stream)
+
             if isinstance(result, dict):
                 return result
             return {"content": str(result)}
@@ -71,16 +85,14 @@ class LLMService:
 
     def _detect_intent(self, query, page_context=None, rag_context=""):
         """
-        Asks LLM to classify the query and extract parameters.
+        Uses OpenAI Native Function Calling to detect which tool to use.
+        Returns a dict: {'tool': 'TOOL_NAME', 'params': {...}} or defaults to SEARCH.
         """
         context_str = ""
         if page_context and page_context.get('path'):
             path = page_context['path']
-            # Simple parsing logic
-            if '/crm/companies/' in path and path.split('/')[-1].isdigit() == False: # UUID check roughly
-                # It's a company detail page
-                # We could fetch the name here if we want to be super smart, but let's just give the ID
-                # Actually, fetching the name is better.
+            # Simple parsing logic for context
+            if '/crm/companies/' in path and path.split('/')[-1].isdigit() == False:
                 from crm.models import Company
                 try:
                     cid = path.split('/')[-1]
@@ -99,7 +111,6 @@ class LLMService:
         
         # Inject Deep Page Context (Data from frontend)
         if page_context and page_context.get('data'):
-             import json
              try:
                  data_str = json.dumps(page_context['data'], ensure_ascii=False, indent=2)
                  context_str += f"\n\n[DEEP PAGE CONTEXT - VISIBLE DATA]:\n{data_str}\n"
@@ -110,7 +121,7 @@ class LLMService:
         CURRENT_DATE = timezone.localtime().strftime('%Y-%m-%d %H:%M')
         
         system_prompt = f"""
-        You are an AI Orchestrator. Analyze the user's request and map it to one of the available tools.
+        You are an AI Orchestrator.
         
         PAGE CONTEXT:
         {context_str}
@@ -120,59 +131,11 @@ class LLMService:
         
         CURRENT DATE: {CURRENT_DATE}
         
-        AVAILABLE TOOLS:
-        - CREATE_COMPANY: "Create company Acme" (params: name, industry, size)
-        - UPDATE_COMPANY: "Update Acme industry to Tech", "Set size of Acme to Large", "Add note to Acme" (params: name, industry, size, website, notes)
-        - GET_COMPANY_DETAILS: "Tell me about Acme", "Details for TechCorp" (params: name)
-        
-        - CREATE_CONTACT: "Add contact John Doe to Acme" (params: first_name, last_name, company_name, email, position)
-        - UPDATE_CONTACT: "Update John Doe email", "Change position of Jane to CTO" (params: name, email, position, phone)
-        
-        - CREATE_CONTRACT: "New contract for Acme" (params: title, company_name, amount, status)
-        - UPDATE_CONTRACT: "Mark contract X as signed" (params: title, status)
-        
-        - CREATE_TASK: "Remind me to call John" (params: title, description, due_date)
-        - EXTRACT_TASKS: "Extract tasks from these notes" (params: text, company_name)
-        - LIST_TASKS: "My tasks" (params: status, priority, due_date_range)
-        
-        - CREATE_MEETING: "Schedule call with Acme" (params: title, company_name, date, type)
-        - LIST_MEETINGS: "Meetings with Acme", "Upcoming meetings" (params: company_name, date_range)
-        
-        - ADD_NOTE: "Add note to Acme" (params: note_content, entity_type, entity_id)
-        - ANALYZE_DATA: "How many contracts?", "Top clients by revenue", "Most active clients" (params: entity_type, metric, time_period, filters)
-        - DRAFT_CONTENT: "Draft email" (params: entity_type, entity_id, instruction)
-        - SEND_EMAIL: "Send email" (params: to_email, subject, body)
-        - ANALYZE_IMAGE: "Analyze this image", "Read this invoice", "What is in this picture?" (params: file_id)
-        
-        - SEARCH: General questions (No params)
-        - ASK_USER: Use this if a REQUIRED parameter is missing for a tool. (params: question)
-        
-        REQUIRED PARAMETERS:
-        - CREATE_COMPANY: name
-        - CREATE_CONTACT: first_name, last_name
-        - CREATE_CONTRACT: title, company_name
-        - CREATE_MEETING: title, company_name, date
-        - CREATE_TASK: title
-        
         INSTRUCTIONS:
-        1. If the user's request matches a tool but is missing a REQUIRED parameter (listed above), use 'ASK_USER'.
-           Example: "Create meeting with Acme" -> {{ "tool": "ASK_USER", "params": {{ "question": "Quelle est la date et l'heure de la réunion ?" }} }}
-        2. SMART WORKFLOWS (Multi-step):
-           - "Onboard new client" / "Nouveau client":
-             Step 1: Ask for Company Name -> CREATE_COMPANY
-             Step 2: Ask for Industry/Size -> UPDATE_COMPANY
-             Step 3: Ask for Main Contact Name/Email -> CREATE_CONTACT
-             Step 4: Ask for Kickoff Meeting Date -> CREATE_MEETING
-             (Guide the user through these steps one by one using ASK_USER if information is missing).
-        3. For ANALYZE_DATA:
-           - "Top clients by revenue" -> metric='top_clients_revenue', entity_type='contract'
-           - "Most active clients" -> metric='top_clients_activity', entity_type='meeting'
-        4. Verify if the missing parameter is in the PAGE CONTEXT or DATABASE CONTEXT. If yes, use it.
-        5. If all parameters are present, use the specific tool.
-        
-        OUTPUT FORMAT:
-        Return ONLY a JSON object.
-        Example: {{ "tool": "CREATE_COMPANY", "params": {{ "name": "Acme" }} }}
+        - Analyze the user request.
+        - If a specific tool matches the request, CALL it.
+        - If the user's request is general or ambiguous, or simply asking for information found in RAG, DO NOT call a tool. Just return a normal message (which means we default to SEARCH/Chat).
+        - If information is missing for a tool (e.g. creating a meeting without a date), DO NOT guess. You can ask the user by just responding with text.
         """
         
         messages = [
@@ -180,13 +143,45 @@ class LLMService:
             {'role': 'user', 'content': query}
         ]
         
-        try:
-            response = self.chat(messages, system_override="You are a JSON generator.")
-            # Clean JSON
-            if "```" in response:
-                response = response.split("```")[1].replace("json", "").strip()
-            return json.loads(response)
-        except:
+        # If using OpenAI, we use the tools API
+        if self.provider != 'gemini': 
+            try:
+                client = OpenAI(
+                    api_key=self.api_key or 'dummy',
+                    base_url=self.base_url
+                )
+                
+                response = client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    tools=TOOLS_SCHEMA,
+                    tool_choice="auto", # Let the model decide
+                    temperature=0
+                )
+                
+                msg = response.choices[0].message
+                
+                # Check if tool_calls matches
+                if msg.tool_calls:
+                    tool_call = msg.tool_calls[0]
+                    # Map function name to our internal tool names
+                    # Our schema names match exactly (CREATE_COMPANY etc)
+                    return {
+                        "tool": tool_call.function.name,
+                        "params": json.loads(tool_call.function.arguments)
+                    }
+                else:
+                    # No tool called -> Default to SEARCH (Chat)
+                    return {"tool": "SEARCH"}
+                    
+            except Exception as e:
+                print(f"Error in Intent Detection (Tools): {e}")
+                return {"tool": "SEARCH"}
+        else:
+            # Fallback for Gemini or others who don't support this code path yet
+            # (We could implement Gemini Function Calling later)
+            print("Gemini does not support this specific Native Tool path yet. Falling back to Prompt Engineering.")
+            # ... old logic or just return SEARCH for now
             return {"tool": "SEARCH"}
 
     def _execute_tool(self, tool_name, params, raw_text, user=None, rag_context=""):
@@ -210,6 +205,8 @@ class LLMService:
                 return CRMTools.update_contract_status(**params)
             elif tool_name == 'CREATE_TASK':
                 return TaskTools.create_task(user=user, **params)
+            elif tool_name == 'UPDATE_TASK':
+                return TaskTools.update_task(user=user, **params)
             elif tool_name == 'CREATE_MEETING':
                 return MeetingTools.create_meeting(user=user, **params)
             elif tool_name == 'LIST_MEETINGS':
@@ -270,6 +267,14 @@ class LLMService:
                 full_path = os.path.join(settings.MEDIA_ROOT, file_id)
                 prompt = raw_text # Use user's full question as prompt
                 return VisionTools.analyze_image(full_path, prompt, user=user)
+            elif tool_name == 'SEARCH_KNOWLEDGE_BASE':
+                # This tool explicitly requests RAG.
+                # We return a special dictionary that signals to 'run_agent' to proceed with chat generation
+                # using the specific query for context retrieval.
+                return {
+                    "type": "RAG_SEARCH",
+                    "query": params.get('query', raw_text)
+                }
             else:
                 return "Unknown tool."
         except Exception as e:
@@ -326,10 +331,26 @@ class LLMService:
             base_url=self.base_url
         )
         
+        # Sanitize messages to prevent "Invalid request: message must not be empty" errors
+        sanitized_messages = []
+        for msg in messages:
+            content = msg.get('content', '')
+            if not content and msg.get('role') == 'assistant':
+                 # If assistant message is empty (e.g. tool call result was just an action),
+                 # we skip it or provide a placeholder to maintain context if possible.
+                 # OpenAI refuses empty content for assistant unless tool_calls is set.
+                 # Since we aren't maintaining full tool_calls history here, we substitute.
+                 content = "[Action performed]"
+            
+            sanitized_messages.append({
+                'role': msg['role'],
+                'content': content
+            })
+
         try:
             response = client.chat.completions.create(
                 model=self.model,
-                messages=messages,
+                messages=sanitized_messages,
                 stream=stream
             )
             

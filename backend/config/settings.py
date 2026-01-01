@@ -90,18 +90,19 @@ DATABASES = {
             "charset": "utf8mb4",
         },
     },
-    "chroma": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "chroma",
-        "USER": "chroma",
-        "PASSWORD": "Azertyuiop22!",
-        "HOST": "cms.2kvl.tech",
-        "PORT": "3306",
-        "OPTIONS": {
-            "charset": "utf8mb4",
+    "vector_db": {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': 'Azertyuiop22!2025',
+        'HOST': 'db.juzedqnhfnvkjrqreyhe.supabase.co',
+        'PORT': '5432',
+        'OPTIONS': {
+            'sslmode': 'require',
         },
     }
 }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -181,6 +182,8 @@ AI_CONF = {
 
 # Gemini Integration
 GEMINI_SECRET_KEY = os.getenv('GEMINI_SECRET_KEY')
+#OPENIA API KEY
+OPENIA_API_KEY_CMS_PERSO = os.getenv('OPENIA_API_KEY_CMS_PERSO')
 
 
 # Email Configuration

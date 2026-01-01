@@ -49,3 +49,7 @@ typing_extensions==4.15.0
 uritemplate==4.2.0
 urllib3==2.5.0
 chromadb==0.4.22
+psycopg2-binary
+pgvector
+google-generativeai
+flashrank

@@ -20,7 +20,7 @@ class Command(BaseCommand):
         for c in companies:
             text = f"Company: {c.name}\nIndustry: {c.industry}\nSize: {c.size}\nAddress: {c.address}\nNotes: {c.notes}"
             texts.append(text)
-            metadatas.append({"type": "company", "title": c.name, "id": str(c.id)})
+            metadatas.append({"type": "company", "title": c.name, "id": str(c.id), "organization_id": str(c.organization.id)})
             ids.append(f"company_{c.id}")
         self.stdout.write(f"Indexed {len(companies)} companies.")
 
@@ -29,7 +29,7 @@ class Command(BaseCommand):
         for c in contracts:
             text = f"Contract: {c.title}\nCompany: {c.company.name if c.company else 'N/A'}\nStatus: {c.status}\nAmount: {c.amount}\nContent: {c.extracted_text or ''}"
             texts.append(text)
-            metadatas.append({"type": "contract", "title": c.title, "id": str(c.id)})
+            metadatas.append({"type": "contract", "title": c.title, "id": str(c.id), "organization_id": str(c.organization.id)})
             ids.append(f"contract_{c.id}")
         self.stdout.write(f"Indexed {len(contracts)} contracts.")
 
@@ -39,7 +39,7 @@ class Command(BaseCommand):
             clean_notes = RAGService._parse_notes(m.notes)
             text = f"Meeting: {m.title}\nDate: {m.date}\nCompany: {m.company.name if m.company else 'N/A'}\nNotes: {clean_notes}"
             texts.append(text)
-            metadatas.append({"type": "meeting", "title": m.title, "id": str(m.id)})
+            metadatas.append({"type": "meeting", "title": m.title, "id": str(m.id), "organization_id": str(m.organization.id)})
             ids.append(f"meeting_{m.id}")
         self.stdout.write(f"Indexed {len(meetings)} meetings.")
 
@@ -48,7 +48,7 @@ class Command(BaseCommand):
         for t in tasks:
             text = f"Task: {t.title}\nStatus: {t.status}\nAssigned: {t.assigned_to.username if t.assigned_to else 'Unassigned'}\nDescription: {t.description}"
             texts.append(text)
-            metadatas.append({"type": "task", "title": t.title, "id": str(t.id)})
+            metadatas.append({"type": "task", "title": t.title, "id": str(t.id), "organization_id": str(t.organization.id)})
             ids.append(f"task_{t.id}")
         self.stdout.write(f"Indexed {len(tasks)} tasks.")
 
@@ -58,7 +58,7 @@ class Command(BaseCommand):
             clean_content = RAGService._parse_notes(p.content)
             text = f"Page: {p.title}\nType: {p.page_type}\nContent: {clean_content}"
             texts.append(text)
-            metadatas.append({"type": "page", "title": p.title, "id": str(p.id)})
+            metadatas.append({"type": "page", "title": p.title, "id": str(p.id), "organization_id": str(p.organization.id)})
             ids.append(f"page_{p.id}")
         self.stdout.write(f"Indexed {len(pages)} pages.")
 

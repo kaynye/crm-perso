@@ -40,6 +40,64 @@ class TaskTools:
         }
 
     @staticmethod
+    def update_task(original_title, new_title=None, description=None, status=None, priority=None, due_date=None, user=None):
+        """Updates an existing task."""
+        if not user or not hasattr(user, 'organization'):
+            return "Erreur: Impossible de déterminer l'organisation."
+
+        # Find task
+        task = Task.objects.filter(
+            title__icontains=original_title, 
+            organization=user.organization
+        ).first()
+        
+        if not task:
+            return f"Erreur : Tâche contenant '{original_title}' introuvable."
+
+        changes = []
+        if new_title:
+            task.title = new_title
+            changes.append(f"titre ({new_title})")
+        
+        if description:
+            # Try to convert markdown to EditorJS JSON
+            try:
+                from ai_assistant.utils.editorjs_converter import convert_markdown_to_editorjs
+                json_data = convert_markdown_to_editorjs(description)
+                task.description = json.dumps(json_data)
+                changes.append("description (formaté)")
+            except Exception as e:
+                print(f"EditorJS conversion failed: {e}")
+                task.description = description
+                changes.append("description (texte brut)")
+            
+        if status:
+            task.status = status
+            changes.append(f"statut ({status})")
+            
+        if priority:
+            task.priority = priority
+            changes.append(f"priorité ({priority})")
+            
+        if due_date:
+            task.due_date = due_date
+            changes.append(f"date ({due_date})")
+            
+        task.save()
+        
+        if not changes:
+            return f"Aucune modification demandée pour la tâche '{task.title}'."
+            
+        return {
+            "message": f"Tâche '{task.title}' mise à jour : {', '.join(changes)}.",
+            "action": {
+                "type": "NAVIGATE",
+                "label": "Voir la tâche",
+                "url": f"/tasks" 
+            }
+        }
+
+    @staticmethod
     def extract_and_create_tasks(text, llm_service, user=None, company_name=None, dry_run=False, original_query=None):
         """
         Uses LLM to extract tasks from text. 
