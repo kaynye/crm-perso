@@ -23,6 +23,7 @@ class Message(models.Model):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     content = models.TextField()
     action = models.JSONField(blank=True, null=True) # Store tool actions
+    sources = models.JSONField(blank=True, null=True) # Store RAG citations
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

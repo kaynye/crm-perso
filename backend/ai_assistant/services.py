@@ -50,7 +50,7 @@ class LLMService:
         # Using full message for Hybrid Search is often better than just entities
         search_terms = last_user_msg 
         # search_terms = self.extract_entities(last_user_msg) # Old way
-        rag_context = RAGService.get_context(search_terms, user=user)
+        rag_context, rag_sources = RAGService.get_context(search_terms, user=user)
         
         # 2. Intent Detection
         intent = self._detect_intent(last_user_msg, page_context, rag_context)
@@ -68,16 +68,27 @@ class LLMService:
                  refined_query = result.get('query')
                  print(f"DEBUG: Performing Refined RAG Search with query: {refined_query}")
                  # Re-fetch context with the refined query
-                 refined_rag_context = RAGService.get_context(refined_query, user=user)
+                 refined_rag_context, refined_sources = RAGService.get_context(refined_query, user=user)
                  # Proceed to Chat with this new context
-                 return self.chat(messages, refined_rag_context, stream=stream)
+                 chat_response = self.chat(messages, refined_rag_context, stream=stream)
+                 
+                 # attach sources to response if it's a generator (stream) or string?
+                 # If stream, we can't easily attach. The caller (View) will handle 'sources' separately if we change return signature.
+                 return {
+                     "response": chat_response,
+                     "sources": refined_sources
+                 }
 
             if isinstance(result, dict):
                 return result
             return {"content": str(result)}
             
         # 4. Fallback to Chat (Streamable)
-        return self.chat(messages, rag_context, stream=stream)
+        chat_response = self.chat(messages, rag_context, stream=stream)
+        return {
+            "response": chat_response,
+            "sources": rag_sources
+        }
 
 
 

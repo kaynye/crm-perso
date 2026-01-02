@@ -44,44 +44,74 @@ class ChatView(APIView):
         page_context = request.data.get('context', {})
         
         # Enable streaming
-        agent_response = llm.run_agent(messages, page_context=page_context, user=request.user, stream=True)
+        agent_output = llm.run_agent(messages, page_context=page_context, user=request.user, stream=True)
         
-        # Check if response is a generator (Stream)
-        if isinstance(agent_response, types.GeneratorType):
-            # Wrapper to intercept stream and save to DB
-            def stream_and_save():
-                full_content = ""
-                for chunk in agent_response:
-                    full_content += chunk
-                    yield chunk
+        # Determine output type
+        # New run_agent returns dict with 'response' key for chat
+        if isinstance(agent_output, dict) and 'response' in agent_output:
+            response_obj = agent_output['response']
+            sources = agent_output.get('sources', [])
+            
+            # Streaming Chat
+            if isinstance(response_obj, types.GeneratorType):
+                def stream_and_save():
+                    full_content = ""
+                    for chunk in response_obj:
+                        full_content += chunk
+                        yield chunk
+                    
+                    # After stream ends, save to DB
+                    Message.objects.create(
+                        conversation=conversation,
+                        role='assistant',
+                        content=full_content,
+                        sources=sources
+                    )
                 
-                # After stream ends, save to DB
+                response = StreamingHttpResponse(stream_and_save(), content_type='text/plain')
+                response['X-Conversation-ID'] = str(conversation.id)
+                # Pass sources in header (JSON encoded)
+                import json
+                try:
+                    response['X-Sources'] = json.dumps(sources)
+                except:
+                    pass
+                return response
+            else:
+                # Non-streaming Chat (fallback)
+                content = str(response_obj)
                 Message.objects.create(
                     conversation=conversation,
                     role='assistant',
-                    content=full_content
+                    content=content,
+                    sources=sources
                 )
-            
-            response = StreamingHttpResponse(stream_and_save(), content_type='text/plain')
-            response['X-Conversation-ID'] = str(conversation.id)
-            return response
-            
-        # Standard Tool Result Response (Review: agent_response is a dict)
-        if isinstance(agent_response, dict):
+                return Response({
+                    'conversation_id': str(conversation.id),
+                    'role': 'assistant',
+                    'content': content,
+                    'sources': sources
+                })
+        
+        # Tool Execution Result (Direct Dict from Tool)
+        elif isinstance(agent_output, dict):
              # Save to DB
              Message.objects.create(
                  conversation=conversation,
                  role='assistant',
-                 content=agent_response.get('content', ''),
-                 action=agent_response.get('action')
+                 content=agent_output.get('content', ''),
+                 action=agent_output.get('action'),
+                 # No sources usually for tool actions unless we thread them through
              )
-             
-        return Response({
-            'conversation_id': str(conversation.id),
-            'role': 'assistant',
-            'content': agent_response.get('content', ''),
-            'action': agent_response.get('action', None)
-        })
+             return Response({
+                'conversation_id': str(conversation.id),
+                'role': 'assistant',
+                'content': agent_output.get('content', ''),
+                'action': agent_output.get('action', None)
+             })
+
+        # Fallback (Should not happen with current logic)
+        return Response({'error': 'Unexpected agent output'}, status=500)
 
 class SummarizeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -155,6 +185,7 @@ class ConversationDetailView(APIView):
                 'role': m.role,
                 'content': m.content,
                 'action': m.action,
+                'sources': m.sources,
                 'created_at': m.created_at
             })
         return Response(data)

@@ -91,11 +91,11 @@ const DocumentList: React.FC<DocumentListProps> = ({ companyId, contractId, show
     };
 
     const isImage = (filename: string) => {
-        return /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+        return /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(filename);
     };
 
     const isPDF = (filename: string) => {
-        return /\.pdf$/i.test(filename);
+        return /\.pdf(\?.*)?$/i.test(filename);
     };
 
     return (

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, ExternalLink, Mic, Square, Paperclip, Bot, User, Sparkles, Trash2 } from 'lucide-react';
+import { Send, Loader2, X, ExternalLink, Mic, Square, Paperclip, Bot, User, Sparkles, Trash2, FileText } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 import { useChat, type Message } from '../../context/ChatContext';
@@ -236,19 +236,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                 const assistantMessage: Message = {
                     role: 'assistant',
                     content: data.content,
-                    action: data.action
+                    action: data.action,
+                    sources: data.sources
                 };
                 setMessages(prev => [...prev, assistantMessage]);
 
             } else {
                 // Handle Streaming Response (Chat)
+                const sourcesHeader = response.headers.get('X-Sources');
+                let sources = [];
+                try {
+                    if (sourcesHeader) sources = JSON.parse(sourcesHeader);
+                } catch (e) {
+                    console.error("Failed to parse sources", e);
+                }
+
                 const reader = response.body?.getReader();
                 const decoder = new TextDecoder();
 
                 if (!reader) throw new Error("No readable stream");
 
                 // Initialize empty assistant message
-                setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+                setMessages(prev => [...prev, { role: 'assistant', content: '', sources: sources }]);
 
                 let fullContent = '';
 
@@ -370,6 +379,39 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Sources */}
+                                {msg.sources && msg.sources.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-2 px-1 animate-in fade-in slide-in-from-top-1 duration-500">
+                                        <div className="w-full flex items-center gap-1 text-[10px] text-gray-400 font-medium uppercase tracking-wider mb-0.5">
+                                            <Sparkles size={10} /> Sources
+                                        </div>
+                                        {msg.sources.map((source, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => {
+                                                    let path = '';
+                                                    const type = source.type?.toUpperCase();
+                                                    if (type === 'CONTRACT') path = `/crm/contracts/${source.id}`;
+                                                    else if (type === 'COMPANY') path = `/crm/companies/${source.id}`;
+                                                    else if (type === 'MEETING') path = `/crm/meetings/${source.id}`;
+                                                    else if (type === 'TASK') path = `/tasks?taskId=${source.id}`;
+                                                    else if (type === 'PAGE') path = `/pages/${source.id}`;
+
+                                                    if (path) {
+                                                        navigate(path);
+                                                        onClose();
+                                                    }
+                                                }}
+                                                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white text-gray-600 rounded-lg border border-gray-200 text-[11px] font-medium hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors shadow-sm"
+                                                title={`${source.type}: ${source.title}`}
+                                            >
+                                                <FileText size={12} className="opacity-70" />
+                                                <span className="truncate max-w-[120px]">{source.title}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
 
                                 {/* Actions / Actions */}
                                 {msg.action && (

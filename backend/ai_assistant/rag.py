@@ -35,7 +35,7 @@ class RAGService:
         
         # Security check
         if not user or not user.organization:
-             return "Error: User organization not found for context retrieval."
+             return "Error: User organization not found for context retrieval.", []
 
         full_context = []
         seen_docs = set()
@@ -81,7 +81,7 @@ class RAGService:
                 continue
 
         if not full_context:
-            return "No specific database records found for these queries."
+            return "No specific database records found for these queries.", []
 
         # Reranking using FlashRank
         try:
@@ -131,7 +131,7 @@ class RAGService:
                          })
             
             if not passages_to_rank:
-                 return "No specific database records found."
+                 return "No specific database records found.", []
 
             # We assume the last query is the most relevant user intent for reranking
             rerank_query = queries[-1] 
@@ -143,10 +143,11 @@ class RAGService:
             top_results = results[:5]
             
             final_context = []
+            final_sources = []
+            seen_source_ids = set()
+
             for res in top_results:
                 # res is dict with 'id', 'text', 'score', 'meta'
-                # But flashrank output structure might vary slightly by version.
-                # Usually it keeps input structure + score.
                 
                 # Retrieve original meta if needed
                 pid = res['id']
@@ -156,13 +157,23 @@ class RAGService:
                 source_type = meta.get('type', 'Unknown')
                 source_name = meta.get('title', 'Unknown')
                 
+                # Avoid duplicates in sources list (e.g. if chunks are from same doc)
+                source_id = meta.get('id', pid) # Application ID not Chunk ID
+                if source_id not in seen_source_ids:
+                    seen_source_ids.add(source_id)
+                    final_sources.append({
+                        "id": source_id,
+                        "title": source_name,
+                        "type": source_type
+                    })
+                
                 final_context.append(f"[{source_type.upper()}] {source_name} (Score: {res['score']:.4f}):\n{res['text']}\n")
                 
-            return "\n".join(final_context)
+            return "\n".join(final_context), final_sources
 
         except ImportError:
             print("FlashRank not installed. Skipping reranking.")
-            return "\n".join(full_context)
+            return "\n".join(full_context), []
         except Exception as e:
             print(f"Reranking failed: {e}. Returning default results.")
-            return "\n".join(full_context)
+            return "\n".join(full_context), []

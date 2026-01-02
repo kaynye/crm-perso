@@ -9,6 +9,11 @@ export interface Message {
         url?: string;
         choices?: { label: string; value: string }[];
     };
+    sources?: Array<{
+        id: string;
+        title: string;
+        type: string;
+    }>;
 }
 
 interface ChatContextType {

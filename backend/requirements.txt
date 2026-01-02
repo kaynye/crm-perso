@@ -53,3 +53,5 @@ psycopg2-binary
 pgvector
 google-generativeai
 flashrank
+boto3
+django-storages
