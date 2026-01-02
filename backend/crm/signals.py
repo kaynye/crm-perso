@@ -62,3 +62,22 @@ def sync_meeting_to_google(sender, instance, created, **kwargs):
             GoogleCalendarService.create_event(instance.created_by, instance)
         # else:
         #     GoogleCalendarService.update_event(instance.created_by, instance)
+
+from django.db.models.signals import post_delete
+from .models import Document, Contract
+
+@receiver(post_delete, sender=Document)
+def delete_document_file(sender, instance, **kwargs):
+    """
+    Deletes the file from filesystem/S3 when the Document object is deleted.
+    """
+    if instance.file:
+        instance.file.delete(save=False)
+
+@receiver(post_delete, sender=Contract)
+def delete_contract_file(sender, instance, **kwargs):
+    """
+    Deletes the file from filesystem/S3 when the Contract object is deleted.
+    """
+    if instance.file:
+        instance.file.delete(save=False)
