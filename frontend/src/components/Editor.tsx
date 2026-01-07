@@ -11,6 +11,7 @@ import Checklist from '@editorjs/checklist';
 import Table from '@editorjs/table';
 import PageBreak from './editor-tools/PageBreakTool';
 import Paragraph from '@editorjs/paragraph';
+import AITextTool from './editor-tools/AITextTool';
 import { useNavigate } from 'react-router-dom';
 
 interface EditorProps {
@@ -53,10 +54,10 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false, holde
                 tools: {
                     paragraph: {
                         class: Paragraph as any,
-                        inlineToolbar: true,
                         config: {
                             preserveBlank: true
-                        }
+                        },
+                        inlineToolbar: ['bold', 'italic', 'link', 'aiText']
                     },
                     header: {
                         class: Header as any,
@@ -99,6 +100,10 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, readOnly = false, holde
                             cols: 3,
                             withHeadings: true,
                         }
+                    },
+                    aiText: {
+                        class: AITextTool as any,
+                        inlineToolbar: true,
                     },
                 },
                 data: data,

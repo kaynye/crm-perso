@@ -540,3 +540,53 @@ class LLMService:
         except Exception as e:
             print(f"Error summarizing conversation: {e}")
             return None
+    def completion(self, text, prompt_type="improve", custom_prompt=None):
+        """
+        Generates a completion/edit for the given text.
+        """
+        system_prompt = """
+        You are an AI writing assistant integrated into a text editor.
+        Your task is to rewrite, improve, or complete the user's text based on their request.
+        
+        INSTRUCTIONS:
+        1. Output ONLY the result text. Do not add quotes, "Here is the text:", or conversational filler.
+        2. Maintain the original language (French or English).
+        3. Respect the formatting.
+        """
+        
+        user_instruction = ""
+        if custom_prompt:
+            user_instruction = f"INSTRUCTION: {custom_prompt}"
+        else:
+            if prompt_type == "improve":
+                user_instruction = "INSTRUCTION: Improve the writing style, grammar, and clarity."
+            elif prompt_type == "shorter":
+                user_instruction = "INSTRUCTION: Make the text more concise."
+            elif prompt_type == "longer":
+                user_instruction = "INSTRUCTION: Expand on the text, adding detail and depth."
+            elif prompt_type == "fix":
+                user_instruction = "INSTRUCTION: Fix grammar and spelling errors only."
+            elif prompt_type == "zap":
+                user_instruction = "INSTRUCTION: Continue the text naturally."
+            
+        final_prompt = f"""
+        {system_prompt}
+        
+        {user_instruction}
+        
+        ORIGINAL TEXT:
+        {text}
+        """
+        
+        messages = [
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': final_prompt} # We put everything in user prompt to enforce instruction
+        ]
+        
+        try:
+            if self.provider == 'gemini':
+                return self._chat_gemini(messages)
+            else:
+                return self._chat_openai(messages)
+        except Exception as e:
+            return f"Error: {str(e)}"

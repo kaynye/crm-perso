@@ -221,3 +221,23 @@ class ConversationDetailView(APIView):
              return Response({'message': 'Conversation deleted'})
         except Conversation.DoesNotExist:
              return Response({'error': 'Conversation not found'}, status=404)
+             return Response({'error': 'Conversation not found'}, status=404)
+
+class TextCompletionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        text = request.data.get('text', '')
+        prompt_type = request.data.get('type', 'improve') # improve, shorter, longer, fix, zap
+        custom_prompt = request.data.get('prompt', '')
+        
+        if not text:
+            return Response({'error': 'No text provided'}, status=400)
+
+        llm = LLMService()
+        completion = llm.completion(text, prompt_type, custom_prompt)
+        
+        return Response({
+            'completion': completion,
+            'original': text
+        })
