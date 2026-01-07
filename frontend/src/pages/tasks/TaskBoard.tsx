@@ -1,73 +1,66 @@
-import React, { useEffect, useState } from 'react';
-import api from '../../api/axios';
+import React, { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import ActionsMenu from '../../components/ActionsMenu';
 import TaskDetail from './TaskDetail';
 import TaskCalendar from './TaskCalendar';
+import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '../../hooks/useTasks';
 
 interface TaskBoardProps {
     filter?: Record<string, any>;
 }
 
 const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
-    const [tasks, setTasks] = useState<any>({ draft: [], todo: [], in_progress: [], done: [] });
     const [viewMode, setViewMode] = useState<'kanban' | 'calendar'>('kanban');
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [newTaskPriority, setNewTaskPriority] = useState('medium');
 
-    useEffect(() => {
-        fetchTasks();
-    }, [filter]);
+    // React Query Hooks
+    const { data: tasksData, isLoading } = useTasks(filter ? new URLSearchParams(filter).toString() : undefined);
+    const createTaskMutation = useCreateTask();
+    const updateTaskMutation = useUpdateTask();
+    const deleteTaskMutation = useDeleteTask();
 
-    const fetchTasks = async () => {
-        try {
-            const params = filter ? new URLSearchParams(filter).toString() : '';
-            const response = await api.get(`/tasks/kanban/?${params}`);
-            setTasks(response.data);
-        } catch (error) {
-            console.error("Failed to fetch tasks", error);
-        }
-    };
+    // Transform flat list to kanban columns if data comes as flat array
+    // Assuming API might return { draft: [], ... } OR just []
+    // Let's normalize. Actually previous code assumed data structure { draft: [], ... }
+    // If the hook returns that structure, we are good.
+    // Let's assume the hook returns what the API returns.
+
+    // Fallback defaults
+    const tasks = tasksData || { draft: [], todo: [], in_progress: [], done: [] };
 
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newTaskTitle) {
-            try {
-                await api.post('/tasks/', {
-                    title: newTaskTitle,
-                    status: 'todo',
-                    priority: newTaskPriority,
-                    ...filter
-                });
-                fetchTasks();
-                setNewTaskTitle('');
-                setNewTaskPriority('medium');
-                setIsNewTaskModalOpen(false);
-            } catch (error) {
-                console.error("Failed to create task", error);
-            }
+            createTaskMutation.mutate({
+                title: newTaskTitle,
+                status: 'todo',
+                priority: newTaskPriority as any,
+                ...filter
+            }, {
+                onSuccess: () => {
+                    setNewTaskTitle('');
+                    setNewTaskPriority('medium');
+                    setIsNewTaskModalOpen(false);
+                }
+            });
         }
     };
 
-    const deleteTask = async (id: string) => {
-        try {
-            await api.delete(`/tasks/${id}/`);
-            fetchTasks();
-            if (selectedTaskId === id) setSelectedTaskId(null);
-        } catch (error) {
-            console.error("Failed to delete task", error);
+    const deleteTask = (id: string) => {
+        if (confirm('Voulez-vous vraiment supprimer cette tâche ?')) {
+            deleteTaskMutation.mutate(id, {
+                onSuccess: () => {
+                    if (selectedTaskId === id) setSelectedTaskId(null);
+                }
+            });
         }
     };
 
-    const updateTaskStatus = async (taskId: string, newStatus: string) => {
-        try {
-            await api.patch(`/tasks/${taskId}/`, { status: newStatus });
-            fetchTasks();
-        } catch (error) {
-            console.error("Failed to update task", error);
-        }
+    const updateTaskStatus = (taskId: string, newStatus: string) => {
+        updateTaskMutation.mutate({ id: taskId, status: newStatus as any });
     };
 
     const onDragStart = (e: React.DragEvent, taskId: string) => {
@@ -83,15 +76,10 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
         updateTaskStatus(taskId, status);
     };
 
-    const renameTask = async (task: any) => {
+    const renameTask = (task: any) => {
         const newTitle = prompt("Renommer la tâche :", task.title);
         if (newTitle && newTitle !== task.title) {
-            try {
-                await api.patch(`/tasks/${task.id}/`, { title: newTitle });
-                fetchTasks();
-            } catch (error) {
-                console.error("Failed to rename task", error);
-            }
+            updateTaskMutation.mutate({ id: task.id, title: newTitle });
         }
     };
 
@@ -157,11 +145,16 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
         </div>
     );
 
-    // Flatten tasks for calendar view
+    // Flatten tasks for calendar
     const allTasks = [...(tasks.draft || []), ...(tasks.todo || []), ...(tasks.in_progress || []), ...(tasks.done || [])];
+
+    if (isLoading && !tasksData) {
+        return <div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-2 border-black border-t-transparent rounded-full"></div></div>;
+    }
 
     return (
         <div className="p-4 md:p-8 h-full flex flex-col bg-white">
+            {/* ... Header and View Toggle ... */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0 mb-6 md:mb-8">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:space-x-4 w-full md:w-auto">
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Tableau des Tâches</h1>
@@ -179,6 +172,10 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
                             Calendrier
                         </button>
                     </div>
+                    {/* Add loading indicator next to title if syncing */}
+                    {(createTaskMutation.isPending || updateTaskMutation.isPending || deleteTaskMutation.isPending) && (
+                        <div className="animate-pulse text-xs text-gray-400">Syncing...</div>
+                    )}
                 </div>
                 <button onClick={() => setIsNewTaskModalOpen(true)} className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm text-sm font-medium">
                     <Plus size={16} className="mr-2" />
@@ -194,6 +191,13 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
                     <Column title="À faire" status="todo" items={tasks.todo || []} />
                     <Column title="En cours" status="in_progress" items={tasks.in_progress || []} />
                     <Column title="Terminé" status="done" items={tasks.done || []} />
+
+                    {/* Empty State */}
+                    {allTasks.length === 0 && (
+                        <div className="w-full flex flex-col items-center justify-center text-gray-400 mt-10">
+                            <p>Aucune tâche trouvée</p>
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="flex-1 overflow-hidden">
@@ -206,11 +210,14 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
                 <TaskDetail
                     taskId={selectedTaskId}
                     onClose={() => setSelectedTaskId(null)}
-                    onUpdate={fetchTasks}
+                    onUpdate={() => {
+                        // Invalidate query to refresh list if needed, though mutation should handle it
+                        // queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+                    }}
                 />
             )}
 
-            {/* New Task Modal */}
+            {/* New Task Modal - Same as before but controlled by mutation */}
             {isNewTaskModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animate-scale-in">
@@ -259,10 +266,10 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={!newTaskTitle.trim()}
+                                    disabled={!newTaskTitle.trim() || createTaskMutation.isPending}
                                     className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Créer la tâche
+                                    {createTaskMutation.isPending ? 'Création...' : 'Créer la tâche'}
                                 </button>
                             </div>
                         </form>

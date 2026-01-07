@@ -1,31 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/axios';
 import { FileText, TrendingUp, AlertCircle } from 'lucide-react';
 import RevenueChart from '../components/dashboard/RevenueChart';
 import TaskDistributionChart from '../components/dashboard/TaskDistributionChart';
 import SalesFunnelChart from '../components/dashboard/SalesFunnelChart';
 import { useAuth } from '../context/AuthContext';
+import { useDashboard } from '../hooks/useDashboard';
 
 const Home: React.FC = () => {
-    const [data, setData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const { data, isLoading: loading } = useDashboard();
     const navigate = useNavigate();
     const { user } = useAuth();
-
-    useEffect(() => {
-        const fetchDashboard = async () => {
-            try {
-                const response = await api.get('/dashboard/');
-                setData(response.data);
-            } catch (error) {
-                console.error("Failed to fetch dashboard", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchDashboard();
-    }, []);
 
     if (loading) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;
 
