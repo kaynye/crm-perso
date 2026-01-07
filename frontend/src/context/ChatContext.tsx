@@ -5,7 +5,7 @@ export interface Message {
     content: string;
     action?: {
         type: string;
-        label: string;
+        label?: string;
         url?: string;
         choices?: { label: string; value: string }[];
     };

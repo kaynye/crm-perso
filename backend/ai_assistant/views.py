@@ -43,8 +43,23 @@ class ChatView(APIView):
         llm = LLMService()
         page_context = request.data.get('context', {})
         
+        # Pass existing summary
+        summary = conversation.summary
+        
         # Enable streaming
-        agent_output = llm.run_agent(messages, page_context=page_context, user=request.user, stream=True)
+        agent_output = llm.run_agent(messages, page_context=page_context, user=request.user, stream=True, summary=summary)
+        
+        # Background Summarization Trigger (every 10 messages)
+        # We check roughly the length of messages list sent by frontend to avoid DB counts
+        if len(messages) > 0 and len(messages) % 10 == 0:
+             import threading
+             def run_summary_bg(cid):
+                 # Re-instantiate service inside thread to avoid shared state issues if any
+                 svc = LLMService() 
+                 svc.summarize_conversation(cid)
+             
+             t = threading.Thread(target=run_summary_bg, args=(str(conversation.id),))
+             t.start()
         
         # Determine output type
         # New run_agent returns dict with 'response' key for chat
@@ -95,19 +110,28 @@ class ChatView(APIView):
         
         # Tool Execution Result (Direct Dict from Tool)
         elif isinstance(agent_output, dict):
+             
+             # If the output IS the action (e.g. Generated Chart or Navigate), use it directly
+             # If it wraps an action (e.g. {'content': 'Done', 'action': {...}}), use that
+             
+             final_content = agent_output.get('content', '')
+             final_action = agent_output.get('action')
+             
+             if not final_action and 'type' in agent_output and agent_output['type'] in ['UI_CHART', 'NAVIGATE', 'CHOICES']:
+                 final_action = agent_output
+                 
              # Save to DB
              Message.objects.create(
                  conversation=conversation,
                  role='assistant',
-                 content=agent_output.get('content', ''),
-                 action=agent_output.get('action'),
-                 # No sources usually for tool actions unless we thread them through
+                 content=final_content,
+                 action=final_action,
              )
              return Response({
                 'conversation_id': str(conversation.id),
                 'role': 'assistant',
-                'content': agent_output.get('content', ''),
-                'action': agent_output.get('action', None)
+                'content': final_content,
+                'action': final_action
              })
 
         # Fallback (Should not happen with current logic)

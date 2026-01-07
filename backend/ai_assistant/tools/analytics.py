@@ -99,7 +99,7 @@ class AnalyticsTools:
             for c in top_companies:
                 report += f"- {c['company__name']}: {c['total_revenue']} €\n"
             return report
-
+ 
         elif metric == 'top_clients_activity':
             # Top clients by meetings count
             top_companies = Meeting.objects.filter(

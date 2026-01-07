@@ -8,6 +8,7 @@ class Conversation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     title = models.CharField(max_length=255, blank=True, null=True)
+    summary = models.TextField(blank=True, null=True) # Long-term memory
 
     def __str__(self):
         return f"{self.user} - {self.created_at}"

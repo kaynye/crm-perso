@@ -40,7 +40,7 @@ class LLMService:
             
         self.model = self.conf.get('MODEL', 'gpt-3.5-turbo')
 
-    def run_agent(self, messages, page_context=None, user=None, stream=False):
+    def run_agent(self, messages, page_context=None, user=None, stream=False, summary=None):
         """
         Main entry point. Decides whether to use a Tool or perform RAG Search.
         """
@@ -52,36 +52,58 @@ class LLMService:
         # search_terms = self.extract_entities(last_user_msg) # Old way
         rag_context, rag_sources = RAGService.get_context(search_terms, user=user)
         
-        # 2. Intent Detection
-        intent = self._detect_intent(last_user_msg, page_context, rag_context)
-        print(f"DEBUG: Detected Intent: {intent}")
+        # 2. Agentic Loop (Max 3 turns)
+        max_turns = 3
+        current_turn = 0
         
-        tool_name = intent.get('tool')
-        params = intent.get('params', {})
-        
-        # 3. Execute Tool if applicable (Tools are NOT streamed for now)
-        if tool_name and tool_name != 'SEARCH':
+        while current_turn < max_turns:
+            current_turn += 1
+            
+            # Detect Intent
+            # Pass messages history if we are in a loop (conceptually), 
+            # but _detect_intent currently doesn't use it.
+            # We rely on updating 'last_user_msg' or 'rag_context' to carry error info.
+            intent = self._detect_intent(last_user_msg, page_context, rag_context, summary)
+            print(f"DEBUG: Turn {current_turn} - Detected Intent: {intent}")
+            
+            tool_name = intent.get('tool')
+            params = intent.get('params', {})
+            
+            # If no tool or standard SEARCH, break to normal chat
+            if not tool_name or tool_name == 'SEARCH':
+                break
+                
+            # Execute Tool
             result = self._execute_tool(tool_name, params, last_user_msg, user, rag_context)
             
-            # Special Handling for explicit RAG Search requested by the tool
+            # Handle RAG Search Refinement
             if isinstance(result, dict) and result.get('type') == 'RAG_SEARCH':
                  refined_query = result.get('query')
-                 print(f"DEBUG: Performing Refined RAG Search with query: {refined_query}")
-                 # Re-fetch context with the refined query
-                 refined_rag_context, refined_sources = RAGService.get_context(refined_query, user=user)
-                 # Proceed to Chat with this new context
-                 chat_response = self.chat(messages, refined_rag_context, stream=stream)
-                 
-                 # attach sources to response if it's a generator (stream) or string?
-                 # If stream, we can't easily attach. The caller (View) will handle 'sources' separately if we change return signature.
-                 return {
-                     "response": chat_response,
-                     "sources": refined_sources
-                 }
-
+                 rag_context, rag_sources = RAGService.get_context(refined_query, user=user)
+                 # Break to chat with new context
+                 break 
+            
+            # Handle Standard Tool Output
+            result_str = str(result)
+            
+            # CHECK FOR ERRORS (Self-Healing)
+            if result_str.startswith("Error"):
+                print(f"DEBUG: Tool Error detected: {result_str}")
+                # Inject Error back into context for next turn
+                # We update 'rag_context' to include the error, forcing the LLM to see it.
+                rag_context += f"\n\n[SYSTEM ERROR from {tool_name}]: {result_str}\n(Please analyze the error and TRY AGAIN with corrected parameters.)\n"
+                
+                # We do NOT break, we loop again.
+                continue
+            
+            # If Success (no error string), we generally stop and return the result 
+            # OR we could let it chain. For now, let's treat tools as "One Shot or Retry".
+            # If tool returns a dict (e.g. NAVIGATE), return generally.
             if isinstance(result, dict):
                 return result
-            return {"content": str(result)}
+                
+            # If string success, return it wrapped
+            return {"content": result_str}
             
         # 4. Fallback to Chat (Streamable)
         chat_response = self.chat(messages, rag_context, stream=stream)
@@ -94,7 +116,7 @@ class LLMService:
 
 
 
-    def _detect_intent(self, query, page_context=None, rag_context=""):
+    def _detect_intent(self, query, page_context=None, rag_context="", summary=None):
         """
         Uses OpenAI Native Function Calling to detect which tool to use.
         Returns a dict: {'tool': 'TOOL_NAME', 'params': {...}} or defaults to SEARCH.
@@ -131,9 +153,14 @@ class LLMService:
         from django.utils import timezone
         CURRENT_DATE = timezone.localtime().strftime('%Y-%m-%d %H:%M')
         
-        system_prompt = f"""
-        You are an AI Orchestrator.
+        summary_section = ""
+        if summary:
+            summary_section = f"\n\nPREVIOUS CONVERSATION SUMMARY:\n{summary}\n"
         
+        system_prompt = f"""
+        Your task is to orchestrate tools to help the user.
+        
+        {summary_section}
         PAGE CONTEXT:
         {context_str}
         
@@ -465,3 +492,51 @@ class LLMService:
                 return self._chat_openai(messages)
         except Exception as e:
             return f"Error generating summary: {str(e)}"
+
+    def summarize_conversation(self, conversation_id):
+        """
+        Compresses the conversation history into a summary.
+        """
+        from .models import Conversation, Message
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+            messages = conversation.messages.all().order_by('created_at')
+            
+            if messages.count() < 5:
+                # Too short to summarize
+                return None
+            
+            # Format history
+            history_text = ""
+            for m in messages:
+                history_text += f"{m.role.upper()}: {m.content}\n"
+                
+            system_prompt = """
+            You are a Memory Manager for an AI assistant.
+            Your task is to create a concise summary of the conversation history.
+            
+            RULES:
+            1. Preserve key decisions, user preferences, and specific entities (Names, Dates, Amounts).
+            2. Ignore casual chit-chat (Hello, Thank you).
+            3. The summary must be in FRENCH.
+            4. Start with "Résumé de la conversation :".
+            """
+            
+            msgs = [
+                {'role': 'system', 'content': system_prompt},
+                {'role': 'user', 'content': history_text}
+            ]
+            
+            if self.provider == 'gemini':
+                summary = self._chat_gemini(msgs)
+            else:
+                summary = self._chat_openai(msgs)
+                
+            # Save
+            conversation.summary = summary
+            conversation.save()
+            return summary
+            
+        except Exception as e:
+            print(f"Error summarizing conversation: {e}")
+            return None
