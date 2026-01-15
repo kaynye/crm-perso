@@ -49,7 +49,8 @@ export default class AITextTool {
             return;
         }
 
-        const termWrapper = this.api.selection.findParentTag(this.tag, this.class);
+        // Check if we are inside our tag
+        // const termWrapper = this.api.selection.findParentTag(this.tag, this.class);
 
         // If already selected, maybe unwrap? or show menu?
         // For this tool, we generally want to perform an action on the *current* selection

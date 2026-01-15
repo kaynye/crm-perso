@@ -22,7 +22,7 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ type, data, title, dataKe
     // Formatting for Tooltip
     const formatValue = (value: number) => {
         if (value > 1000) return `${(value / 1000).toFixed(1)}k`;
-        return value;
+        return value.toString();
     };
 
     const renderChart = () => {
@@ -83,7 +83,7 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ type, data, title, dataKe
                             dataKey={dataKeys.y}
                             nameKey={dataKeys.x}
                         >
-                            {data.map((entry, index) => (
+                            {data.map((_, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
