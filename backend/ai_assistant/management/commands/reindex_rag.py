@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from ai_assistant.vector_store import VectorStore
 from ai_assistant.rag import RAGService
-from crm.models import Company, Contact, Contract, Meeting
+from crm.models import Space, Contact, Contract, Meeting
 from tasks.models import Task
 from pages.models import Page
 
@@ -15,19 +15,19 @@ class Command(BaseCommand):
         metadatas = []
         ids = []
 
-        # 1. Index Companies
-        companies = Company.objects.all()
-        for c in companies:
-            text = f"Company: {c.name}\nIndustry: {c.industry}\nSize: {c.size}\nAddress: {c.address}\nNotes: {c.notes}"
+        # 1. Index Spaces
+        spaces = Space.objects.all()
+        for c in spaces:
+            text = f"Space: {c.name}\nIndustry: {c.industry}\nSize: {c.size}\nAddress: {c.address}\nNotes: {c.notes}"
             texts.append(text)
-            metadatas.append({"type": "company", "title": c.name, "id": str(c.id), "organization_id": str(c.organization.id)})
-            ids.append(f"company_{c.id}")
-        self.stdout.write(f"Indexed {len(companies)} companies.")
+            metadatas.append({"type": "space", "title": c.name, "id": str(c.id), "organization_id": str(c.organization.id)})
+            ids.append(f"space_{c.id}")
+        self.stdout.write(f"Indexed {len(spaces)} spaces.")
 
         # 2. Index Contracts
         contracts = Contract.objects.all()
         for c in contracts:
-            text = f"Contract: {c.title}\nCompany: {c.company.name if c.company else 'N/A'}\nStatus: {c.status}\nAmount: {c.amount}\nContent: {c.extracted_text or ''}"
+            text = f"Contract: {c.title}\nSpace: {c.space.name if c.space else 'N/A'}\nStatus: {c.status}\nAmount: {c.amount}\nContent: {c.extracted_text or ''}"
             texts.append(text)
             metadatas.append({"type": "contract", "title": c.title, "id": str(c.id), "organization_id": str(c.organization.id)})
             ids.append(f"contract_{c.id}")
@@ -37,7 +37,7 @@ class Command(BaseCommand):
         meetings = Meeting.objects.all()
         for m in meetings:
             clean_notes = RAGService._parse_notes(m.notes)
-            text = f"Meeting: {m.title}\nDate: {m.date}\nCompany: {m.company.name if m.company else 'N/A'}\nNotes: {clean_notes}"
+            text = f"Meeting: {m.title}\nDate: {m.date}\nSpace: {m.space.name if m.space else 'N/A'}\nNotes: {clean_notes}"
             texts.append(text)
             metadatas.append({"type": "meeting", "title": m.title, "id": str(m.id), "organization_id": str(m.organization.id)})
             ids.append(f"meeting_{m.id}")

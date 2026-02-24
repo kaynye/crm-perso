@@ -249,8 +249,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     <div>
                         <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">CRM</div>
                         <div className="space-y-0.5">
-                            <div onClick={() => navigate('/crm/companies')} className="flex items-center px-2 py-1.5 text-sm text-gray-300 hover:bg-zinc-800 hover:text-white cursor-pointer rounded-md transition-colors">
-                                <span className="truncate">Entreprises</span>
+                            <div onClick={() => navigate('/crm/spaces')} className="flex items-center px-2 py-1.5 text-sm text-gray-300 hover:bg-zinc-800 hover:text-white cursor-pointer rounded-md transition-colors">
+                                <span className="truncate">Espaces</span>
                             </div>
                             <div onClick={() => navigate('/crm/contacts')} className="flex items-center px-2 py-1.5 text-sm text-gray-300 hover:bg-zinc-800 hover:text-white cursor-pointer rounded-md transition-colors">
                                 <span className="truncate">Contacts</span>

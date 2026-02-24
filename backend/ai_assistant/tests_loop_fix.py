@@ -9,7 +9,7 @@ User = get_user_model()
 
 class MockTool:
     @staticmethod
-    def extract_and_create_tasks(text, llm_service, user=None, company_name=None, dry_run=False, original_query=None):
+    def extract_and_create_tasks(text, llm_service, user=None, space_name=None, dry_run=False, original_query=None):
         return {"dry_run": dry_run}
 
 class LoopFixTest(TestCase):

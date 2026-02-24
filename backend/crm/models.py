@@ -3,28 +3,68 @@ from django.conf import settings
 import uuid
 import secrets
 
-class Company(models.Model):
+class SpaceType(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
+    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, related_name='space_types')
+    
+    # Modules
+    has_contracts = models.BooleanField(default=False)
+    has_meetings = models.BooleanField(default=True)
+    has_documents = models.BooleanField(default=True)
+    has_tasks = models.BooleanField(default=True)
+    has_contacts = models.BooleanField(default=True)
+    
+    vocabulary = models.JSONField(default=dict, blank=True, help_text="e.g. {'contact': 'Membre'}")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.name
+
+class Space(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    type = models.ForeignKey(SpaceType, on_delete=models.PROTECT, related_name='spaces', null=True)
+    members = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='spaces', blank=True, through='SpaceMember')
     website = models.URLField(blank=True)
     industry = models.CharField(max_length=100, blank=True)
     size = models.CharField(max_length=50, blank=True)
     address = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     tags = models.CharField(max_length=255, blank=True) # Comma separated for now
-    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, related_name='companies')
+    organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, related_name='spaces')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name_plural = "Companies"
+        verbose_name_plural = "Spaces"
 
     def __str__(self):
         return self.name
 
+class SpaceMember(models.Model):
+    ROLE_CHOICES = (
+        ('admin', 'Admin'),
+        ('editor', 'Éditeur'),
+        ('spectator', 'Spectateur'),
+    )
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    space = models.ForeignKey(Space, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='editor')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('space', 'user')
+        
+    def __str__(self):
+        return f"{self.user} - {self.space.name} ({self.role})"
+
 class Contact(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    company = models.ForeignKey(Company, related_name='contacts', on_delete=models.CASCADE, null=True, blank=True)
+    space = models.ForeignKey(Space, related_name='contacts', on_delete=models.CASCADE, null=True, blank=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField(blank=True)
@@ -48,7 +88,7 @@ class Contract(models.Model):
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    company = models.ForeignKey(Company, related_name='contracts', on_delete=models.CASCADE)
+    space = models.ForeignKey(Space, related_name='contracts', on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     start_date = models.DateField(null=True, blank=True)
@@ -88,7 +128,7 @@ class Meeting(models.Model):
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    company = models.ForeignKey(Company, related_name='meetings', on_delete=models.CASCADE)
+    space = models.ForeignKey(Space, related_name='meetings', on_delete=models.CASCADE)
     contract = models.ForeignKey(Contract, related_name='meetings', on_delete=models.SET_NULL, null=True, blank=True)
     title = models.CharField(max_length=255)
     date = models.DateTimeField(null=True, blank=True)
@@ -104,7 +144,7 @@ class Meeting(models.Model):
 
 class Document(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    company = models.ForeignKey(Company, related_name='documents', on_delete=models.CASCADE, null=True, blank=True)
+    space = models.ForeignKey(Space, related_name='documents', on_delete=models.CASCADE, null=True, blank=True)
     contract = models.ForeignKey(Contract, related_name='documents', on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(max_length=255)
     file = models.FileField(upload_to='documents/')
@@ -130,7 +170,7 @@ class SharedLink(models.Model):
     password = models.CharField(max_length=128, blank=True, null=True, help_text="Hashed password for guest access")
     
     # Scope (can be linked to a Company or a specific Project/Contract)
-    company = models.ForeignKey(Company, null=True, blank=True, on_delete=models.CASCADE, related_name='shared_links')
+    space = models.ForeignKey(Space, null=True, blank=True, on_delete=models.CASCADE, related_name='shared_links')
     contract = models.ForeignKey(Contract, null=True, blank=True, on_delete=models.CASCADE, related_name='shared_links')
     
     # Permissions
@@ -153,5 +193,27 @@ class SharedLink(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        target = self.contract or self.company
+        target = self.contract or self.space
         return f"Shared Link for {target}"
+
+class ActivityLog(models.Model):
+    ACTION_CHOICES = (
+        ('created', 'Created'),
+        ('updated', 'Updated'),
+        ('deleted', 'Deleted'),
+    )
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    space = models.ForeignKey(Space, on_delete=models.CASCADE, related_name='activities')
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='activities')
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    entity_type = models.CharField(max_length=50) # e.g. 'Document', 'Task', 'Member'
+    entity_name = models.CharField(max_length=255) # Name of the document, task, etc. at the time of action
+    details = models.JSONField(default=dict, blank=True, help_text="Stores change deltas like {'old_status': 'draft', 'new_status': 'signed'}")
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.actor} {self.action} {self.entity_type} '{self.entity_name}' in {self.space.name}"

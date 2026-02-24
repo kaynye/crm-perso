@@ -5,13 +5,13 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "CREATE_COMPANY",
-            "description": "Create a new company in the CRM.",
+            "description": "Create a new space in the CRM.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "name": {"type": "string", "description": "Name of the company"},
+                    "name": {"type": "string", "description": "Name of the space"},
                     "industry": {"type": "string", "description": "Industry sector (e.g. Tech, Retail)"},
-                    "size": {"type": "string", "description": "Size of company (Small, Medium, Large)"},
+                    "size": {"type": "string", "description": "Size of space (Small, Medium, Large)"},
                     "website": {"type": "string", "description": "Website URL"}
                 },
                 "required": ["name"]
@@ -22,11 +22,11 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "UPDATE_COMPANY",
-            "description": "Update an existing company's details.",
+            "description": "Update an existing space's details.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "name": {"type": "string", "description": "Name of the company to update"},
+                    "name": {"type": "string", "description": "Name of the space to update"},
                     "industry": {"type": "string"},
                     "size": {"type": "string"},
                     "website": {"type": "string"},
@@ -40,11 +40,11 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "GET_COMPANY_DETAILS",
-            "description": "Get full details about a company.",
+            "description": "Get full details about a space.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "name": {"type": "string", "description": "Name of the company to search for"}
+                    "name": {"type": "string", "description": "Name of the space to search for"}
                 },
                 "required": ["name"]
             }
@@ -60,7 +60,7 @@ TOOLS_SCHEMA = [
                 "properties": {
                     "first_name": {"type": "string"},
                     "last_name": {"type": "string"},
-                    "company_name": {"type": "string", "description": "Company to link this contact to"},
+                    "space_name": {"type": "string", "description": "Space to link this contact to"},
                     "email": {"type": "string"},
                     "position": {"type": "string"}
                 },
@@ -89,16 +89,16 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "CREATE_CONTRACT",
-            "description": "Create a new contract for a company.",
+            "description": "Create a new contract for a space.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "title": {"type": "string", "description": "Title of the contract"},
-                    "company_name": {"type": "string", "description": "Company this contract belongs to"},
+                    "space_name": {"type": "string", "description": "Space this contract belongs to"},
                     "amount": {"type": "number", "description": "Monetary value of the contract"},
                     "status": {"type": "string", "enum": ["draft", "signed", "active", "terminated"], "default": "draft"}
                 },
-                "required": ["title", "company_name"]
+                "required": ["title", "space_name"]
             }
         }
     },
@@ -163,7 +163,7 @@ TOOLS_SCHEMA = [
                 "type": "object",
                 "properties": {
                     "text": {"type": "string", "description": "The text content to analyze for tasks"},
-                    "company_name": {"type": "string", "description": "Associated company context if any"},
+                    "space_name": {"type": "string", "description": "Associated space context if any"},
                     "dry_run": {"type": "boolean", "description": "If true, only list tasks without creating them. Default false."}
                 },
                 "required": ["text"]
@@ -194,11 +194,11 @@ TOOLS_SCHEMA = [
                 "type": "object",
                 "properties": {
                     "title": {"type": "string", "description": "Subject of the meeting"},
-                    "company_name": {"type": "string", "description": "Company involved"},
+                    "space_name": {"type": "string", "description": "Space involved"},
                     "date": {"type": "string", "description": "Date and time (YYYY-MM-DD HH:MM)"},
                     "type": {"type": "string", "enum": ["call", "in_person", "video"], "default": "call"}
                 },
-                "required": ["title", "company_name", "date"]
+                "required": ["title", "space_name", "date"]
             }
         }
     },
@@ -210,7 +210,7 @@ TOOLS_SCHEMA = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "company_name": {"type": "string"},
+                    "space_name": {"type": "string"},
                     "date_range": {"type": "string", "enum": ["upcoming", "past", "today", "this_week"]}
                 }
             }
@@ -220,11 +220,11 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "ADD_NOTE",
-            "description": "Add a text note to an entity (Company, Contact, Contract, Meeting).",
+            "description": "Add a text note to an entity (Space, Contact, Contract, Meeting).",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "entity_type": {"type": "string", "enum": ["company", "contact", "contract", "meeting"]},
+                    "entity_type": {"type": "string", "enum": ["space", "contact", "contract", "meeting"]},
                     "entity_id": {"type": "string", "description": "UUID or ID of the entity"},
                     "note_content": {"type": "string", "description": "The content of the note"}
                 },
@@ -240,7 +240,7 @@ TOOLS_SCHEMA = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "entity_type": {"type": "string", "enum": ["company", "contact", "contract", "meeting", "task"]},
+                    "entity_type": {"type": "string", "enum": ["space", "contact", "contract", "meeting", "task"]},
                     "metric": {"type": "string", "enum": ["count", "sum_amount", "top_clients_revenue", "top_clients_activity"]},
                     "time_period": {"type": "string", "enum": ["this_month", "last_month", "this_year", "all_time"]}
                 },

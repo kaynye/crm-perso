@@ -1,20 +1,20 @@
 from django.utils import timezone
-from crm.models import Meeting, Company
+from crm.models import Meeting, Space
 from datetime import datetime
 
 class MeetingTools:
     @staticmethod
-    def create_meeting(title, company_name, date, type='video', notes='', user=None):
+    def create_meeting(title, space_name, date, type='video', notes='', user=None):
         """
-        Creates a new meeting for a company.
+        Creates a new meeting for a space.
         """
-        # Find company
+        # Find space
         if not user or not hasattr(user, 'organization'):
             return "Erreur: Impossible de déterminer l'organisation."
 
-        company = Company.objects.filter(name__icontains=company_name, organization=user.organization).first()
-        if not company:
-            return f"Entreprise '{company_name}' introuvable. Veuillez d'abord la créer."
+        space = Space.objects.filter(name__icontains=space_name, organization=user.organization).first()
+        if not space:
+            return f"Entreprise '{space_name}' introuvable. Veuillez d'abord la créer."
 
         # Parse date if string
         if isinstance(date, str):
@@ -37,7 +37,7 @@ class MeetingTools:
 
         meeting = Meeting.objects.create(
             title=title,
-            company=company,
+            space=space,
             date=meeting_date,
             type=type,
             notes=notes,
@@ -46,7 +46,7 @@ class MeetingTools:
         )
 
         return {
-            "message": f"Réunion '{title}' planifiée avec {company.name} le {meeting_date}.",
+            "message": f"Réunion '{title}' planifiée avec {space.name} le {meeting_date}.",
             "action": {
                 "type": "NAVIGATE",
                 "label": "Voir la réunion",
@@ -54,15 +54,15 @@ class MeetingTools:
             }
         }
     @staticmethod
-    def list_meetings(company_name=None, date_range=None, limit=5, user=None):
+    def list_meetings(space_name=None, date_range=None, limit=5, user=None):
         """Lists meetings with filters."""
         if not user or not hasattr(user, 'organization'):
             return "Erreur: Impossible de déterminer l'organisation."
             
         meetings = Meeting.objects.filter(organization=user.organization).order_by('-date')
         
-        if company_name:
-            meetings = meetings.filter(company__name__icontains=company_name)
+        if space_name:
+            meetings = meetings.filter(space__name__icontains=space_name)
             
         now = timezone.now()
         if date_range == 'upcoming':
@@ -81,8 +81,8 @@ class MeetingTools:
         meetings = meetings[:limit]
         meeting_list = []
         for m in meetings:
-             company_str = m.company.name if m.company else "Sans entreprise"
+             space_str = m.space.name if m.space else "Sans entreprise"
              date_str = m.date.strftime('%d/%m/%Y %H:%M')
-             meeting_list.append(f"- {m.title} avec {company_str} le {date_str} ({m.type})")
+             meeting_list.append(f"- {m.title} avec {space_str} le {date_str} ({m.type})")
              
         return f"Réunions trouvées ({count} total) :\n" + "\n".join(meeting_list)

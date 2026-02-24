@@ -1,4 +1,4 @@
-from crm.models import Company, Contract, Meeting, Contact
+from crm.models import Space, Contract, Meeting, Contact
 from tasks.models import Task
 
 class ContentTools:
@@ -13,18 +13,18 @@ class ContentTools:
         entity = None
         data_str = ""
         
-        if entity_type == 'company':
-            entity = Company.objects.filter(id=entity_id, organization=user.organization).first()
+        if entity_type == 'space':
+            entity = Space.objects.filter(id=entity_id, organization=user.organization).first()
             if entity:
-                data_str = f"Company: {entity.name}\nIndustry: {entity.industry}\nNotes: {entity.notes}"
+                data_str = f"Space: {entity.name}\nIndustry: {entity.industry}\nNotes: {entity.notes}"
         elif entity_type == 'contract':
             entity = Contract.objects.filter(id=entity_id, organization=user.organization).first()
             if entity:
-                data_str = f"Contract: {entity.title}\nCompany: {entity.company.name}\nStatus: {entity.status}\nAmount: {entity.amount}\nStart Date: {entity.start_date}\nEnd Date: {entity.end_date}"
+                data_str = f"Contract: {entity.title}\nSpace: {entity.space.name}\nStatus: {entity.status}\nAmount: {entity.amount}\nStart Date: {entity.start_date}\nEnd Date: {entity.end_date}"
         elif entity_type == 'contact':
             entity = Contact.objects.filter(id=entity_id, organization=user.organization).first()
             if entity:
-                data_str = f"Contact: {entity.first_name} {entity.last_name}\nPosition: {entity.position}\nCompany: {entity.company.name if entity.company else 'N/A'}"
+                data_str = f"Contact: {entity.first_name} {entity.last_name}\nPosition: {entity.position}\nSpace: {entity.space.name if entity.space else 'N/A'}"
         
         if not entity:
             # If no entity, maybe they just want general drafting using RAG?

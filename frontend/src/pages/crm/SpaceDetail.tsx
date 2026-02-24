@@ -6,29 +6,41 @@ import clsx from 'clsx';
 import DocumentList from '../../components/documents/DocumentList';
 import ShareModal from '../../components/crm/ShareModal';
 import TaskBoard from '../tasks/TaskBoard';
+import SpaceMembersTab from '../../components/crm/SpaceMembersTab';
+import ActivityLogTab from '../../components/crm/ActivityLogTab';
+import { useSpaceVocabulary } from '../../hooks/useSpaceVocabulary';
+import { useSpaceMember } from '../../hooks/useSpaceMember';
 
-const CompanyDetail: React.FC = () => {
+const SpaceDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [company, setCompany] = useState<any>(null);
+    const [space, setSpace] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'contracts' | 'meetings' | 'documents' | 'tasks'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'contracts' | 'meetings' | 'documents' | 'tasks' | 'members' | 'activities'>('overview');
     const [contracts, setContracts] = useState<any[]>([]);
     const [meetings, setMeetings] = useState<any[]>([]);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
+    const vocab = useSpaceVocabulary(space);
+    const { canEdit, canManageMembers } = useSpaceMember(id);
+
     useEffect(() => {
-        fetchCompany();
-        fetchContracts();
-        fetchMeetings();
+        fetchSpace();
     }, [id]);
 
-    const fetchCompany = async () => {
+    useEffect(() => {
+        if (space?.type_details) {
+            if (space.type_details.has_contracts) fetchContracts();
+            if (space.type_details.has_meetings) fetchMeetings();
+        }
+    }, [space]);
+
+    const fetchSpace = async () => {
         try {
-            const response = await api.get(`/crm/companies/${id}/`);
-            setCompany(response.data);
+            const response = await api.get(`/crm/spaces/${id}/`);
+            setSpace(response.data);
         } catch (error) {
-            console.error("Failed to fetch company", error);
+            console.error("Failed to fetch space", error);
         } finally {
             setLoading(false);
         }
@@ -36,7 +48,7 @@ const CompanyDetail: React.FC = () => {
 
     const fetchContracts = async () => {
         try {
-            const response = await api.get(`/crm/contracts/?company=${id}`);
+            const response = await api.get(`/crm/contracts/?space=${id}`);
             if (response.data.results) {
                 setContracts(response.data.results);
             } else {
@@ -49,7 +61,7 @@ const CompanyDetail: React.FC = () => {
 
     const fetchMeetings = async () => {
         try {
-            const response = await api.get(`/crm/meetings/?company=${id}`);
+            const response = await api.get(`/crm/meetings/?space=${id}`);
             if (response.data.results) {
                 setMeetings(response.data.results);
             } else {
@@ -63,7 +75,7 @@ const CompanyDetail: React.FC = () => {
 
 
     if (loading) return <div className="p-8 flex justify-center items-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>;
-    if (!company) return <div className="p-8 text-center text-gray-500">Entreprise introuvable</div>;
+    if (!space) return <div className="p-8 text-center text-gray-500">Espace introuvable</div>;
 
     return (
         <div className="flex flex-col h-full bg-gray-50">
@@ -75,12 +87,12 @@ const CompanyDetail: React.FC = () => {
                             <Building size={24} className="md:w-8 md:h-8" />
                         </div>
                         <div>
-                            <h1 className="text-xl md:text-2xl font-bold text-gray-900">{company.name}</h1>
+                            <h1 className="text-xl md:text-2xl font-bold text-gray-900">{space.name}</h1>
                             <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500 mt-1">
-                                {company.industry && <span>{company.industry}</span>}
-                                {company.website && (
-                                    <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline truncate max-w-[200px]">
-                                        {company.website}
+                                {space.industry && <span>{space.industry}</span>}
+                                {space.website && (
+                                    <a href={space.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline truncate max-w-[200px]">
+                                        {space.website}
                                     </a>
                                 )}
                             </div>
@@ -93,12 +105,14 @@ const CompanyDetail: React.FC = () => {
                         <Share2 size={16} />
                         Partager
                     </button>
-                    <button
-                        onClick={() => navigate(`/crm/companies/${id}/edit`)}
-                        className="w-full md:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
-                    >
-                        Modifier l'entreprise
-                    </button>
+                    {canEdit && (
+                        <button
+                            onClick={() => navigate(`/crm/spaces/${id}/edit`)}
+                            className="w-full md:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
+                        >
+                            Modifier l'espace
+                        </button>
+                    )}
                 </div>
 
                 {/* Tabs */}
@@ -112,48 +126,78 @@ const CompanyDetail: React.FC = () => {
                     >
                         Aperçu
                     </button>
-                    <button
-                        onClick={() => setActiveTab('contracts')}
-                        className={clsx(
-                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
-                            activeTab === 'contracts' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
-                        )}
-                    >
-                        Contrats
-                        <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
-                            {contracts.length}
-                        </span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('meetings')}
-                        className={clsx(
-                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
-                            activeTab === 'meetings' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
-                        )}
-                    >
-                        Réunions
-                        <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
-                            {meetings.length}
-                        </span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('tasks')}
-                        className={clsx(
-                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
-                            activeTab === 'tasks' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
-                        )}
-                    >
-                        Tâches
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('documents')}
-                        className={clsx(
-                            "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
-                            activeTab === 'documents' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
-                        )}
-                    >
-                        Documents
-                    </button>
+                    {space.type_details?.has_contracts && (
+                        <button
+                            onClick={() => setActiveTab('contracts')}
+                            className={clsx(
+                                "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
+                                activeTab === 'contracts' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                            )}
+                        >
+                            {vocab.contract_plural}
+                            <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
+                                {contracts.length}
+                            </span>
+                        </button>
+                    )}
+                    {space.type_details?.has_meetings && (
+                        <button
+                            onClick={() => setActiveTab('meetings')}
+                            className={clsx(
+                                "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
+                                activeTab === 'meetings' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                            )}
+                        >
+                            {vocab.meeting_plural}
+                            <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
+                                {meetings.length}
+                            </span>
+                        </button>
+                    )}
+                    {space.type_details?.has_tasks && (
+                        <button
+                            onClick={() => setActiveTab('tasks')}
+                            className={clsx(
+                                "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
+                                activeTab === 'tasks' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                            )}
+                        >
+                            {vocab.task_plural}
+                        </button>
+                    )}
+                    {space.type_details?.has_documents && (
+                        <button
+                            onClick={() => setActiveTab('documents')}
+                            className={clsx(
+                                "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
+                                activeTab === 'documents' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                            )}
+                        >
+                            {vocab.document_plural}
+                        </button>
+                    )}
+                    {canManageMembers && (
+                        <button
+                            onClick={() => setActiveTab('members')}
+                            className={clsx(
+                                "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
+                                activeTab === 'members' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                            )}
+                        >
+                            {vocab.member_plural}
+                        </button>
+                    )}
+                    {canManageMembers && (
+                        <button
+                            onClick={() => setActiveTab('activities')}
+                            className={clsx(
+                                "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
+                                activeTab === 'activities' ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                            )}
+                        >
+                            Activités
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -168,23 +212,23 @@ const CompanyDetail: React.FC = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-sm text-gray-500">Taille</label>
-                                            <p className="text-gray-900 mt-1">{company.size || '-'}</p>
+                                            <p className="text-gray-900 mt-1">{space.size || '-'}</p>
                                         </div>
                                         <div>
                                             <label className="text-sm text-gray-500">Secteur</label>
-                                            <p className="text-gray-900 mt-1">{company.industry || '-'}</p>
+                                            <p className="text-gray-900 mt-1">{space.industry || '-'}</p>
                                         </div>
                                         <div className="md:col-span-2">
                                             <label className="text-sm text-gray-500">Adresse</label>
                                             <p className="text-gray-900 flex items-center gap-2 mt-1">
                                                 <MapPin size={16} className="text-gray-400 flex-shrink-0" />
-                                                {company.address || '-'}
+                                                {space.address || '-'}
                                             </p>
                                         </div>
                                         <div className="md:col-span-2">
                                             <label className="text-sm text-gray-500">Tags</label>
                                             <div className="flex flex-wrap gap-2 mt-1">
-                                                {company.tags ? company.tags.split(',').map((tag: string, i: number) => (
+                                                {space.tags ? space.tags.split(',').map((tag: string, i: number) => (
                                                     <span key={i} className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs">
                                                         {tag.trim()}
                                                     </span>
@@ -194,7 +238,7 @@ const CompanyDetail: React.FC = () => {
                                         <div className="md:col-span-2">
                                             <label className="text-sm text-gray-500">Notes</label>
                                             <p className="text-gray-900 mt-1 whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded-md border border-gray-100">
-                                                {company.notes || 'Aucune note'}
+                                                {space.notes || 'Aucune note'}
                                             </p>
                                         </div>
                                     </div>
@@ -210,15 +254,17 @@ const CompanyDetail: React.FC = () => {
                 {activeTab === 'contracts' && (
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-medium text-gray-900">Contrats</h3>
-                            <button
-                                onClick={() => navigate(`/crm/contracts/new?company=${id}`)}
-                                className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
-                            >
-                                <Plus size={16} />
-                                <span className="hidden md:inline">Nouveau Contrat</span>
-                                <span className="md:hidden">Nouveau</span>
-                            </button>
+                            <h3 className="text-lg font-medium text-gray-900 capitalize">{vocab.contract_plural}</h3>
+                            {canEdit && (
+                                <button
+                                    onClick={() => navigate(`/crm/contracts/new?space=${id}`)}
+                                    className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
+                                >
+                                    <Plus size={16} />
+                                    <span className="hidden md:inline">Nouveau {vocab.contract}</span>
+                                    <span className="md:hidden">Nouveau</span>
+                                </button>
+                            )}
                         </div>
                         <div className="grid gap-4">
                             {contracts.map(contract => (
@@ -258,15 +304,17 @@ const CompanyDetail: React.FC = () => {
                 {activeTab === 'meetings' && (
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-medium text-gray-900">Réunions</h3>
-                            <button
-                                onClick={() => navigate(`/crm/meetings/new?company=${id}`)}
-                                className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
-                            >
-                                <Plus size={16} />
-                                <span className="hidden md:inline">Nouvelle Réunion</span>
-                                <span className="md:hidden">Nouvelle</span>
-                            </button>
+                            <h3 className="text-lg font-medium text-gray-900 capitalize">{vocab.meeting_plural}</h3>
+                            {canEdit && (
+                                <button
+                                    onClick={() => navigate(`/crm/meetings/new?space=${id}`)}
+                                    className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
+                                >
+                                    <Plus size={16} />
+                                    <span className="hidden md:inline">Nouveau/Nouvelle {vocab.meeting}</span>
+                                    <span className="md:hidden">Nouveau</span>
+                                </button>
+                            )}
                         </div>
                         <div className="grid gap-4">
                             {meetings.map(meeting => (
@@ -299,22 +347,30 @@ const CompanyDetail: React.FC = () => {
 
                 {activeTab === 'tasks' && (
                     <div className="h-[calc(100vh-200px)]">
-                        <TaskBoard filter={{ company: id }} />
+                        <TaskBoard filter={{ space: id }} />
                     </div>
                 )}
 
                 {activeTab === 'documents' && (
-                    <DocumentList companyId={id} />
+                    <DocumentList spaceId={id!} canEdit={canEdit} />
+                )}
+
+                {activeTab === 'members' && canManageMembers && (
+                    <SpaceMembersTab spaceId={id!} />
+                )}
+
+                {activeTab === 'activities' && canManageMembers && (
+                    <ActivityLogTab spaceId={id!} />
                 )}
             </div>
             {/* Share Modal */}
             <ShareModal
                 isOpen={isShareModalOpen}
                 onClose={() => setIsShareModalOpen(false)}
-                companyId={id}
+                spaceId={id!}
             />
         </div>
     );
 };
 
-export default CompanyDetail;
+export default SpaceDetail;

@@ -1,7 +1,7 @@
 import json
 from django.db.models import Q
 from pages.models import Page
-from crm.models import Company, Contact, Contract, Meeting
+from crm.models import Space, Contact, Contract, Meeting
 from tasks.models import Task
 
 class RAGService:

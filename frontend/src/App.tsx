@@ -6,9 +6,9 @@ import AutomationForm from './pages/automation/AutomationForm';
 import Login from './pages/Login';
 import Layout from './components/Layout';
 import PageDetail from './pages/PageDetail';
-import CompanyList from './pages/crm/CompanyList';
-import CompanyDetail from './pages/crm/CompanyDetail';
-import CompanyForm from './pages/crm/CompanyForm';
+import SpaceList from './pages/crm/SpaceList';
+import SpaceDetail from './pages/crm/SpaceDetail';
+import SpaceForm from './pages/crm/SpaceForm';
 import ContactList from './pages/crm/ContactList';
 import ContractDetail from './pages/crm/ContractDetail';
 import ContractForm from './pages/crm/ContractForm';
@@ -49,10 +49,10 @@ const AppRoutes: React.FC = () => {
       }>
         <Route index element={<Home />} />
         <Route path="pages/:id" element={<PageDetail />} />
-        <Route path="crm/companies" element={<CompanyList />} />
-        <Route path="crm/companies/new" element={<CompanyForm />} />
-        <Route path="crm/companies/:id" element={<CompanyDetail />} />
-        <Route path="crm/companies/:id/edit" element={<CompanyForm />} />
+        <Route path="crm/spaces" element={<SpaceList />} />
+        <Route path="crm/spaces/new" element={<SpaceForm />} />
+        <Route path="crm/spaces/:id" element={<SpaceDetail />} />
+        <Route path="crm/spaces/:id/edit" element={<SpaceForm />} />
         <Route path="crm/contacts" element={<ContactList />} />
         <Route path="crm/contracts/new" element={<ContractForm />} />
         <Route path="crm/contracts/:id" element={<ContractDetail />} />

@@ -393,7 +393,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                                                     let path = '';
                                                     const type = source.type?.toUpperCase();
                                                     if (type === 'CONTRACT') path = `/crm/contracts/${source.id}`;
-                                                    else if (type === 'COMPANY') path = `/crm/companies/${source.id}`;
+                                                    else if (type === 'COMPANY') path = `/crm/spaces/${source.id}`;
                                                     else if (type === 'MEETING') path = `/crm/meetings/${source.id}`;
                                                     else if (type === 'TASK') path = `/tasks?taskId=${source.id}`;
                                                     else if (type === 'PAGE') path = `/pages/${source.id}`;

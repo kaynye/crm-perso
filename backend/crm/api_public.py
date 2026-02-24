@@ -64,8 +64,8 @@ class PublicSharedLinkView(views.APIView):
         # link.save(update_fields=['views_count'])
         
         data = {
-            "title": str(link.contract or link.company),
-            "type": "contract" if link.contract else "company",
+            "title": str(link.contract or link.space),
+            "type": "contract" if link.contract else "space",
             "permissions": {
                 "allow_tasks": link.allow_tasks,
                 "allow_task_creation": link.allow_task_creation,
@@ -74,7 +74,7 @@ class PublicSharedLinkView(views.APIView):
                 "allow_documents": link.allow_documents,
                 "allow_document_upload": link.allow_document_upload,
             },
-            "company_name": link.company.name if link.company else (link.contract.company.name if link.contract else "Unknown"),
+            "space_name": link.space.name if link.space else (link.contract.space.name if link.contract else "Unknown"),
             "token": link.token
         }
         return Response(data)
@@ -93,10 +93,10 @@ class PublicTaskViewSet(viewsets.ModelViewSet):
             
         if link.contract:
             return Task.objects.filter(contract=link.contract)
-        elif link.company:
-            # Include tasks directly linked to company OR via contracts of that company
+        elif link.space:
+            # Include tasks directly linked to space OR via contracts of that space
             return Task.objects.filter(
-                Q(company=link.company) | Q(contract__company=link.company)
+                Q(space=link.space) | Q(contract__space=link.space)
             ).distinct()
         return Task.objects.none()
 
@@ -110,21 +110,21 @@ class PublicTaskViewSet(viewsets.ModelViewSet):
         # Force status to draft
         kwargs = {
             'status': 'draft', 
-            'organization': link.company.organization if link.company else link.contract.organization,
+            'organization': link.space.organization if link.space else link.contract.organization,
         }
         
         # Link to appropriate scope
         if link.contract:
             kwargs['contract'] = link.contract
-            kwargs['company'] = link.contract.company
-        elif link.company:
-            kwargs['company'] = link.company
+            kwargs['space'] = link.contract.space
+        elif link.space:
+            kwargs['space'] = link.space
             
         serializer.save(**kwargs)
 
 class PublicMeetingSerializer(MeetingSerializer):
     class Meta(MeetingSerializer.Meta):
-        read_only_fields = MeetingSerializer.Meta.read_only_fields + ['company', 'contract']
+        read_only_fields = MeetingSerializer.Meta.read_only_fields + ['space', 'contract']
 
 class PublicMeetingViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
@@ -140,9 +140,9 @@ class PublicMeetingViewSet(viewsets.ModelViewSet):
             
         if link.contract:
             return Meeting.objects.filter(contract=link.contract)
-        elif link.company:
+        elif link.space:
             return Meeting.objects.filter(
-                Q(company=link.company) | Q(contract__company=link.company)
+                Q(space=link.space) | Q(contract__space=link.space)
             ).distinct()
         return Meeting.objects.none()
 
@@ -155,14 +155,14 @@ class PublicMeetingViewSet(viewsets.ModelViewSet):
 
         # Link to appropriate scope
         kwargs = {
-            'organization': link.company.organization if link.company else link.contract.organization,
+            'organization': link.space.organization if link.space else link.contract.organization,
         }
         
         if link.contract:
             kwargs['contract'] = link.contract
-            kwargs['company'] = link.contract.company
-        elif link.company:
-            kwargs['company'] = link.company
+            kwargs['space'] = link.contract.space
+        elif link.space:
+            kwargs['space'] = link.space
             
         serializer.save(**kwargs)
 
@@ -180,9 +180,9 @@ class PublicDocumentViewSet(viewsets.ModelViewSet):
             
         if link.contract:
             return Document.objects.filter(contract=link.contract)
-        elif link.company:
+        elif link.space:
             return Document.objects.filter(
-                Q(company=link.company) | Q(contract__company=link.company)
+                Q(space=link.space) | Q(contract__space=link.space)
             ).distinct()
         return Document.objects.none()
 
@@ -195,14 +195,14 @@ class PublicDocumentViewSet(viewsets.ModelViewSet):
 
         # Link to appropriate scope
         kwargs = {
-            'organization': link.company.organization if link.company else link.contract.organization,
+            'organization': link.space.organization if link.space else link.contract.organization,
         }
         
         if link.contract:
             kwargs['contract'] = link.contract
-            kwargs['company'] = link.contract.company
-        elif link.company:
-            kwargs['company'] = link.company
+            kwargs['space'] = link.contract.space
+        elif link.space:
+            kwargs['space'] = link.space
             
         serializer.save(**kwargs)
 
@@ -215,5 +215,5 @@ class PublicMeetingTemplateViewSet(viewsets.ReadOnlyModelViewSet):
         link = get_link_or_403(token)
         
         # Get organization from link
-        org = link.company.organization if link.company else link.contract.organization
+        org = link.space.organization if link.space else link.contract.organization
         return MeetingTemplate.objects.filter(organization=org)

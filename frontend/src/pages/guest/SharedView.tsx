@@ -10,7 +10,7 @@ import { editorStyles } from './utils/parsers';
 interface Config {
     title: string;
     type: string;
-    company_name: string;
+    space_name: string;
     permissions: {
         allow_tasks: boolean;
         allow_task_creation: boolean;
@@ -178,7 +178,7 @@ const SharedView: React.FC = () => {
     };
 
     return (
-        <GuestLayout title={config.title} subtitle={config.company_name}>
+        <GuestLayout title={config.title} subtitle={config.space_name}>
             <style>{editorStyles}</style>
             {/* Navigation Tabs */}
             <div className="border-b border-gray-200 mb-6">

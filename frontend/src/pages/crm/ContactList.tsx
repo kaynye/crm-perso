@@ -69,7 +69,7 @@ const ContactList: React.FC = () => {
         contact.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         contact.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.company?.name.toLowerCase().includes(searchTerm.toLowerCase())
+        contact.space?.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const sortedContacts = [...filteredContacts].sort((a, b) => {
@@ -78,10 +78,10 @@ const ContactList: React.FC = () => {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
 
-        // Handle nested company name
-        if (sortConfig.key === 'company') {
-            aValue = a.company ? a.company.name : '';
-            bValue = b.company ? b.company.name : '';
+        // Handle nested space name
+        if (sortConfig.key === 'space') {
+            aValue = a.space ? a.space.name : '';
+            bValue = b.space ? b.space.name : '';
         }
 
         // Case insensitive string comparison
@@ -167,10 +167,10 @@ const ContactList: React.FC = () => {
                             </th>
                             <th
                                 className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                                onClick={() => requestSort('company')}
+                                onClick={() => requestSort('space')}
                             >
                                 <div className="flex items-center">
-                                    Entreprise <SortIcon columnKey="company" />
+                                    Espace <SortIcon columnKey="space" />
                                 </div>
                             </th>
                             <th className="relative px-6 py-4">
@@ -199,9 +199,9 @@ const ContactList: React.FC = () => {
                                     ) : '-'}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {contact.company ? (
-                                        <Link to={`/crm/companies/${contact.company.id}`} className="text-blue-600 hover:underline">
-                                            {contact.company.name}
+                                    {contact.space ? (
+                                        <Link to={`/crm/spaces/${contact.space.id}`} className="text-blue-600 hover:underline">
+                                            {contact.space.name}
                                         </Link>
                                     ) : '-'}
                                 </td>
@@ -251,11 +251,11 @@ const ContactList: React.FC = () => {
                                     {contact.phone}
                                 </a>
                             )}
-                            {contact.company && (
+                            {contact.space && (
                                 <div className="flex items-center text-sm text-gray-600">
-                                    <span className="text-gray-400 mr-2">Entreprise:</span>
-                                    <Link to={`/crm/companies/${contact.company.id}`} className="text-blue-600 hover:underline font-medium">
-                                        {contact.company.name}
+                                    <span className="text-gray-400 mr-2">Espace:</span>
+                                    <Link to={`/crm/spaces/${contact.space.id}`} className="text-blue-600 hover:underline font-medium">
+                                        {contact.space.name}
                                     </Link>
                                 </div>
                             )}

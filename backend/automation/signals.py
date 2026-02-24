@@ -189,7 +189,7 @@ def execute_actions(rule, instance):
                 title=title,
                 organization=instance.organization,
                 assigned_to=assigned_to,
-                company=getattr(instance, 'company', None) if hasattr(instance, 'company') else None,
+                space=getattr(instance, 'space', None) if hasattr(instance, 'space') else None,
                 contract=instance if isinstance(instance, Contract) else getattr(instance, 'contract', None),
                 created_by=actor # Keep chain of ownership
             )

@@ -1,6 +1,6 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from crm.models import Company, Contact, Contract, Meeting
+from crm.models import Space, Contact, Contract, Meeting
 from tasks.models import Task
 from pages.models import Page
 from .vector_store import VectorStore
@@ -40,22 +40,22 @@ def delete_from_vector_index(instance, type_name):
     except Exception as e:
         print(f"Error deleting from RAG index for {type_name} {instance.id}: {e}")
 
-# --- Company ---
-@receiver(post_save, sender=Company)
-def index_company(sender, instance, **kwargs):
+# --- Space ---
+@receiver(post_save, sender=Space)
+def index_space(sender, instance, **kwargs):
     if not instance.organization: return
-    text = f"Company: {instance.name}\nIndustry: {instance.industry}\nSize: {instance.size}\nAddress: {instance.address}\nNotes: {instance.notes}"
-    update_vector_index(instance, "company", text, instance.name, instance.organization.id)
+    text = f"Space: {instance.name}\nIndustry: {instance.industry}\nSize: {instance.size}\nAddress: {instance.address}\nNotes: {instance.notes}"
+    update_vector_index(instance, "space", text, instance.name, instance.organization.id)
 
-@receiver(post_delete, sender=Company)
-def delete_company_index(sender, instance, **kwargs):
-    delete_from_vector_index(instance, "company")
+@receiver(post_delete, sender=Space)
+def delete_space_index(sender, instance, **kwargs):
+    delete_from_vector_index(instance, "space")
 
 # --- Contract ---
 @receiver(post_save, sender=Contract)
 def index_contract(sender, instance, **kwargs):
     if not instance.organization: return
-    text = f"Contract: {instance.title}\nCompany: {instance.company.name if instance.company else 'N/A'}\nStatus: {instance.status}\nAmount: {instance.amount}\nContent: {instance.extracted_text or ''}"
+    text = f"Contract: {instance.title}\nSpace: {instance.space.name if instance.space else 'N/A'}\nStatus: {instance.status}\nAmount: {instance.amount}\nContent: {instance.extracted_text or ''}"
     update_vector_index(instance, "contract", text, instance.title, instance.organization.id)
 
 @receiver(post_delete, sender=Contract)
@@ -67,7 +67,7 @@ def delete_contract_index(sender, instance, **kwargs):
 def index_meeting(sender, instance, **kwargs):
     if not instance.organization: return
     clean_notes = RAGService._parse_notes(instance.notes)
-    text = f"Meeting: {instance.title}\nDate: {instance.date}\nCompany: {instance.company.name if instance.company else 'N/A'}\nNotes: {clean_notes}"
+    text = f"Meeting: {instance.title}\nDate: {instance.date}\nSpace: {instance.space.name if instance.space else 'N/A'}\nNotes: {clean_notes}"
     update_vector_index(instance, "meeting", text, instance.title, instance.organization.id)
 
 @receiver(post_delete, sender=Meeting)

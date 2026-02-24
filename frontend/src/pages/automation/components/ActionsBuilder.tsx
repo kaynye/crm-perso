@@ -23,7 +23,7 @@ const VARIABLES_BY_MODEL: Record<string, { label: string, value: string }[]> = {
     'task': [
         { label: 'Titre', value: '{{ instance.title }}' },
         { label: 'Assigné à', value: '{{ instance.assigned_to }}' },
-        { label: 'Entreprise', value: '{{ instance.company }}' },
+        { label: 'Espace', value: '{{ instance.space }}' },
     ],
     'contract': [
         { label: 'Titre', value: '{{ instance.title }}' },

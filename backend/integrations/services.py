@@ -46,12 +46,12 @@ class GoogleCalendarService:
                 description += f"\n\nContract: {meeting.contract.title}"
             
             attendees = []
-            # Assuming meeting is linked to a company, we might want to add contact emails
+            # Assuming meeting is linked to a space, we might want to add contact emails
             # This logic can be expanded. For now, let's just add the user.
             
             event = {
                 'summary': meeting.title,
-                'location': 'Online' if meeting.type == 'video' else meeting.company.address,
+                'location': 'Online' if meeting.type == 'video' else meeting.space.address,
                 'description': description,
                 'start': {
                     'dateTime': start_time,

@@ -17,14 +17,14 @@ const ContractForm: React.FC = () => {
     const { user } = useAuth();
     const [formData, setFormData] = useState({
         title: '',
-        company: '',
+        space: '',
         amount: '',
         start_date: '',
         end_date: '',
         status: 'draft',
         file: null as File | null,
     });
-    const [companies, setCompanies] = useState<any[]>([]);
+    const [spaces, setSpaces] = useState<any[]>([]);
     const [templates, setTemplates] = useState<any[]>([]);
     const [selectedTemplate, setSelectedTemplate] = useState<string>('');
     const [editorData, setEditorData] = useState<OutputData>({ blocks: [] });
@@ -34,15 +34,15 @@ const ContractForm: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [companiesRes, templatesRes] = await Promise.all([
-                    api.get('/crm/companies/'),
+                const [spacesRes, templatesRes] = await Promise.all([
+                    api.get('/crm/spaces/'),
                     api.get('/crm/contract-templates/')
                 ]);
 
-                if (companiesRes.data.results) {
-                    setCompanies(companiesRes.data.results);
+                if (spacesRes.data.results) {
+                    setSpaces(spacesRes.data.results);
                 } else {
-                    setCompanies(companiesRes.data);
+                    setSpaces(spacesRes.data);
                 }
 
                 if (templatesRes.data.results) {
@@ -56,7 +56,7 @@ const ContractForm: React.FC = () => {
                     const contract = contractRes.data;
                     setFormData({
                         title: contract.title,
-                        company: contract.company,
+                        space: contract.space,
                         amount: contract.amount || '',
                         start_date: contract.start_date || '',
                         end_date: contract.end_date || '',
@@ -67,8 +67,8 @@ const ContractForm: React.FC = () => {
                         setEditorData(contract.content);
                     }
                 } else {
-                    const companyId = searchParams.get('company');
-                    setFormData(prev => ({ ...prev, company: companyId || '' }));
+                    const spaceId = searchParams.get('space');
+                    setFormData(prev => ({ ...prev, space: spaceId || '' }));
                 }
             } catch (error) {
                 console.error("Failed to load data", error);
@@ -79,16 +79,16 @@ const ContractForm: React.FC = () => {
         fetchData();
     }, [id, searchParams]);
 
-    const injectTemplateData = (content: any, companyId: string) => {
+    const injectTemplateData = (content: any, spaceId: string) => {
         let stringified = JSON.stringify(content);
 
-        const company = companies.find(c => c.id === companyId);
+        const space = spaces.find(c => c.id === spaceId);
 
         // Client details
-        if (company) {
-            stringified = stringified.replace(/\{\{\s*client_name\s*\}\}/g, company.name || '');
-            stringified = stringified.replace(/\{\{\s*client_address\s*\}\}/g, company.address || '');
-            // Company custom fields could be added here
+        if (space) {
+            stringified = stringified.replace(/\{\{\s*client_name\s*\}\}/g, space.name || '');
+            stringified = stringified.replace(/\{\{\s*client_address\s*\}\}/g, space.address || '');
+            // Space custom fields could be added here
         }
 
         // Contract details
@@ -116,7 +116,7 @@ const ContractForm: React.FC = () => {
         const template = templates.find(t => t.id === templateId);
         if (template && template.content) {
             // Apply injection immediately when loading template
-            const dataToInject = injectTemplateData(template.content, formData.company);
+            const dataToInject = injectTemplateData(template.content, formData.space);
             setEditorData(dataToInject);
         }
     };
@@ -127,7 +127,7 @@ const ContractForm: React.FC = () => {
 
     const handleGeneratePDF = async () => {
         // Inject variables into current editorData before generating PDF
-        const contentWithVariables = injectTemplateData(editorData, formData.company);
+        const contentWithVariables = injectTemplateData(editorData, formData.space);
         const content_html = parseEditorJsData(contentWithVariables);
 
         generatePDF({
@@ -144,7 +144,7 @@ const ContractForm: React.FC = () => {
 
         const data = new FormData();
         data.append('title', formData.title);
-        data.append('company', formData.company);
+        data.append('space', formData.space);
         data.append('status', formData.status);
         if (formData.amount) data.append('amount', formData.amount);
         if (formData.start_date) data.append('start_date', formData.start_date);
@@ -179,7 +179,7 @@ const ContractForm: React.FC = () => {
         if (window.confirm('Êtes-vous sûr de vouloir supprimer ce contrat ?')) {
             try {
                 await api.delete(`/crm/contracts/${id}/`);
-                navigate('/crm/companies');
+                navigate('/crm/spaces');
             } catch (error) {
                 console.error("Failed to delete contract", error);
                 alert("Échec de la suppression du contrat");
@@ -254,15 +254,15 @@ const ContractForm: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Entreprise Client</label>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Espace Client</label>
                             <select
                                 required
-                                value={formData.company}
-                                onChange={e => setFormData({ ...formData, company: e.target.value })}
+                                value={formData.space}
+                                onChange={e => setFormData({ ...formData, space: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             >
                                 <option value="">Choisir...</option>
-                                {companies.map(c => (
+                                {spaces.map(c => (
                                     <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                             </select>

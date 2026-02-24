@@ -4,22 +4,18 @@ from core.validators import validate_cross_organization_reference
 
 class TaskSerializer(serializers.ModelSerializer):
     assigned_to_name = serializers.ReadOnlyField(source='assigned_to.username')
-    company_name = serializers.SerializerMethodField()
+    space_name = serializers.SerializerMethodField()
 
-    def get_company_name(self, obj):
-        if obj.company:
-            return obj.company.name
-        if obj.contract and obj.contract.company:
-            return obj.contract.company.name
+    def get_space_name(self, obj):
+        if obj.space:
+            return obj.space.name
         return None
 
-    linked_company_id = serializers.SerializerMethodField()
+    linked_space_id = serializers.SerializerMethodField()
 
-    def get_linked_company_id(self, obj):
-        if obj.company:
-            return obj.company.id
-        if obj.contract and obj.contract.company:
-            return obj.contract.company.id
+    def get_linked_space_id(self, obj):
+        if obj.space:
+            return obj.space.id
         return None
     contact_name = serializers.ReadOnlyField(source='contact.first_name')
     
@@ -35,7 +31,7 @@ class TaskSerializer(serializers.ModelSerializer):
         if user.is_authenticated:
             validate_cross_organization_reference(
                 user,
-                company=data.get('company'),
+                space=data.get('space'),
                 contract=data.get('contract'),
                 contact=data.get('contact'),
                 page=data.get('page')

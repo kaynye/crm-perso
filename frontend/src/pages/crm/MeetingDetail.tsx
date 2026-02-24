@@ -169,13 +169,13 @@ const MeetingDetail: React.FC = () => {
                     {/* Info */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <h3 className="text-sm font-medium text-gray-500 mb-2">Entreprise</h3>
+                            <h3 className="text-sm font-medium text-gray-500 mb-2">Espace</h3>
                             <div className="flex items-center gap-2 text-gray-900">
                                 <Building size={16} className="text-gray-400" />
-                                {meeting.company_name || 'Chargement...'}
-                                {meeting.company && (
-                                    <button onClick={() => navigate(`/crm/companies/${meeting.company}`)} className="text-indigo-600 hover:underline text-sm">
-                                        Voir l'entreprise
+                                {meeting.space_name || 'Chargement...'}
+                                {meeting.space && (
+                                    <button onClick={() => navigate(`/crm/spaces/${meeting.space}`)} className="text-indigo-600 hover:underline text-sm">
+                                        Voir l'espace
                                     </button>
                                 )}
                             </div>

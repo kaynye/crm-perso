@@ -68,7 +68,7 @@ const MentionModal: React.FC<MentionModalProps> = ({ isOpen, onClose, onSelect }
     const getIcon = (type: string) => {
         switch (type) {
             case 'page': return <FileText size={14} className="text-gray-400" />;
-            case 'company': return <Building size={14} className="text-blue-400" />;
+            case 'space': return <Building size={14} className="text-blue-400" />;
             case 'contact': return <User size={14} className="text-green-400" />;
             case 'task': return <CheckSquare size={14} className="text-red-400" />;
             default: return <FileText size={14} className="text-gray-400" />;

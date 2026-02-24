@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Company, Contact, Contract, Meeting, Document, MeetingTemplate, SharedLink, ContractTemplate
+from .models import Space, Contact, Contract, Meeting, Document, MeetingTemplate, SharedLink, ContractTemplate, SpaceType, SpaceMember, ActivityLog
 from core.validators import validate_cross_organization_reference
 
 class ContactSerializer(serializers.ModelSerializer):
@@ -11,12 +11,12 @@ class ContactSerializer(serializers.ModelSerializer):
     def validate(self, data):
         validate_cross_organization_reference(
             self.context['request'].user,
-            company=data.get('company')
+            space=data.get('space')
         )
         return data
 
 class ContractSerializer(serializers.ModelSerializer):
-    company_name = serializers.ReadOnlyField(source='company.name')
+    space_name = serializers.ReadOnlyField(source='space.name')
     organization_details = serializers.SerializerMethodField()
     created_by_name = serializers.SerializerMethodField()
 
@@ -43,7 +43,7 @@ class ContractSerializer(serializers.ModelSerializer):
     def validate(self, data):
         validate_cross_organization_reference(
             self.context['request'].user,
-            company=data.get('company')
+            space=data.get('space')
         )
         return data
 
@@ -56,12 +56,33 @@ class ContractTemplateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         validate_cross_organization_reference(
             self.context['request'].user,
-            company=data.get('company')
+            space=data.get('space')
         )
         return data
 
+class SpaceTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SpaceType
+        fields = '__all__'
+        read_only_fields = ['organization']
+
+class SpaceMemberSerializer(serializers.ModelSerializer):
+    user_details = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = SpaceMember
+        fields = '__all__'
+        
+    def get_user_details(self, obj):
+        return {
+            'id': obj.user.id,
+            'first_name': obj.user.first_name,
+            'last_name': obj.user.last_name,
+            'email': obj.user.email,
+        }
+
 class MeetingSerializer(serializers.ModelSerializer):
-    company_name = serializers.ReadOnlyField(source='company.name')
+    space_name = serializers.ReadOnlyField(source='space.name')
     
     class Meta:
         model = Meeting
@@ -71,23 +92,38 @@ class MeetingSerializer(serializers.ModelSerializer):
     def validate(self, data):
         validate_cross_organization_reference(
             self.context['request'].user,
-            company=data.get('company'),
+            space=data.get('space'),
             contract=data.get('contract')
         )
         return data
 
-class CompanySerializer(serializers.ModelSerializer):
+class SpaceSerializer(serializers.ModelSerializer):
     contacts = ContactSerializer(many=True, read_only=True)
     contracts = ContractSerializer(many=True, read_only=True)
     meetings = MeetingSerializer(many=True, read_only=True)
+    type_details = serializers.SerializerMethodField()
     
     class Meta:
-        model = Company
+        model = Space
         fields = '__all__'
         read_only_fields = ['organization']
 
+    def get_type_details(self, obj):
+        if obj.type:
+            return {
+                'id': obj.type.id,
+                'name': obj.type.name,
+                'has_contracts': obj.type.has_contracts,
+                'has_meetings': obj.type.has_meetings,
+                'has_documents': obj.type.has_documents,
+                'has_tasks': obj.type.has_tasks,
+                'has_contacts': obj.type.has_contacts,
+                'vocabulary': obj.type.vocabulary,
+            }
+        return None
+
 class DocumentSerializer(serializers.ModelSerializer):
-    company_name = serializers.ReadOnlyField(source='company.name')
+    space_name = serializers.ReadOnlyField(source='space.name')
     contract_title = serializers.ReadOnlyField(source='contract.title')
 
     class Meta:
@@ -98,7 +134,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     def validate(self, data):
         validate_cross_organization_reference(
             self.context['request'].user,
-            company=data.get('company'),
+            space=data.get('space'),
             contract=data.get('contract')
         )
         return data
@@ -114,7 +150,7 @@ class SharedLinkSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SharedLink
-        fields = ['id', 'token', 'contract', 'company', 'allow_tasks', 'allow_task_creation', 'allow_meetings', 'allow_meeting_creation', 'allow_documents', 'allow_document_upload', 'created_at', 'expires_at', 'views_count', 'url', 'password']
+        fields = ['id', 'token', 'contract', 'space', 'allow_tasks', 'allow_task_creation', 'allow_meetings', 'allow_meeting_creation', 'allow_documents', 'allow_document_upload', 'created_at', 'expires_at', 'views_count', 'url', 'password']
         read_only_fields = ['token', 'views_count', 'created_by']
 
     def create(self, validated_data):
@@ -130,7 +166,20 @@ class SharedLinkSerializer(serializers.ModelSerializer):
     def validate(self, data):
         validate_cross_organization_reference(
             self.context['request'].user,
-            company=data.get('company'),
+            space=data.get('space'),
             contract=data.get('contract')
         )
         return data
+
+class ActivityLogSerializer(serializers.ModelSerializer):
+    actor_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ActivityLog
+        fields = '__all__'
+        read_only_fields = ['space', 'actor', 'action', 'entity_type', 'entity_name', 'timestamp']
+
+    def get_actor_name(self, obj):
+        if obj.actor:
+            return f"{obj.actor.first_name} {obj.actor.last_name}".strip() or obj.actor.email
+        return "System"

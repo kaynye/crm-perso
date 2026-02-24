@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { ArrowLeft, Save, Trash2 } from 'lucide-react';
 
-const CompanyForm: React.FC = () => {
+const SpaceForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const isEditing = !!id;
@@ -12,6 +12,7 @@ const CompanyForm: React.FC = () => {
     const [initialLoading, setInitialLoading] = useState(isEditing);
     const [formData, setFormData] = useState({
         name: '',
+        type: '',
         industry: '',
         size: '',
         website: '',
@@ -19,14 +20,30 @@ const CompanyForm: React.FC = () => {
         notes: '',
         tags: '',
     });
+    const [spaceTypes, setSpaceTypes] = useState<any[]>([]);
 
     useEffect(() => {
+        const fetchSpaceTypes = async () => {
+            try {
+                const response = await api.get('/crm/space-types/');
+                if (response.data.results) {
+                    setSpaceTypes(response.data.results);
+                } else {
+                    setSpaceTypes(response.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch space types", error);
+            }
+        };
+        fetchSpaceTypes();
+
         if (isEditing) {
-            const fetchCompany = async () => {
+            const fetchSpace = async () => {
                 try {
-                    const response = await api.get(`/crm/companies/${id}/`);
+                    const response = await api.get(`/crm/spaces/${id}/`);
                     setFormData({
                         name: response.data.name,
+                        type: response.data.type || '',
                         industry: response.data.industry || '',
                         size: response.data.size || '',
                         website: response.data.website || '',
@@ -35,22 +52,22 @@ const CompanyForm: React.FC = () => {
                         tags: response.data.tags || '',
                     });
                 } catch (error) {
-                    console.error("Failed to fetch company", error);
+                    console.error("Failed to fetch space", error);
                 } finally {
                     setInitialLoading(false);
                 }
             };
-            fetchCompany();
+            fetchSpace();
         }
     }, [id, isEditing]);
 
     const handleDelete = async () => {
-        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette entreprise ? Cette action est irréversible et supprimera toutes les données associées (contacts, contrats, réunions).')) {
+        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette espace ? Cette action est irréversible et supprimera toutes les données associées (contacts, contrats, réunions).')) {
             try {
-                await api.delete(`/crm/companies/${id}/`);
-                navigate('/crm/companies');
+                await api.delete(`/crm/spaces/${id}/`);
+                navigate('/crm/spaces');
             } catch (error) {
-                console.error("Failed to delete company", error);
+                console.error("Failed to delete space", error);
                 alert("Échec de la suppression");
             }
         }
@@ -61,14 +78,14 @@ const CompanyForm: React.FC = () => {
         setLoading(true);
         try {
             if (isEditing) {
-                await api.patch(`/crm/companies/${id}/`, formData);
-                navigate(`/crm/companies/${id}`);
+                await api.patch(`/crm/spaces/${id}/`, formData);
+                navigate(`/crm/spaces/${id}`);
             } else {
-                const response = await api.post('/crm/companies/', formData);
-                navigate(`/crm/companies/${response.data.id}`);
+                const response = await api.post('/crm/spaces/', formData);
+                navigate(`/crm/spaces/${response.data.id}`);
             }
         } catch (error) {
-            console.error("Failed to save company", error);
+            console.error("Failed to save space", error);
             alert("Échec de l'enregistrement");
         } finally {
             setLoading(false);
@@ -84,14 +101,14 @@ const CompanyForm: React.FC = () => {
                     <ArrowLeft size={20} />
                 </button>
                 <h1 className="text-2xl font-bold text-gray-900">
-                    {isEditing ? "Modifier l'entreprise" : "Nouvelle entreprise"}
+                    {isEditing ? "Modifier l'espace" : "Nouvelle espace"}
                 </h1>
             </div>
 
             <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nom de l'entreprise *</label>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Nom de l'espace *</label>
                         <input
                             type="text"
                             required
@@ -99,6 +116,21 @@ const CompanyForm: React.FC = () => {
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Type d'espace *</label>
+                        <select
+                            required
+                            value={formData.type}
+                            onChange={e => setFormData({ ...formData, type: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        >
+                            <option value="">Sélectionner un type...</option>
+                            {spaceTypes.map(type => (
+                                <option key={type.id} value={type.id}>{type.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>
@@ -198,4 +230,4 @@ const CompanyForm: React.FC = () => {
     );
 };
 
-export default CompanyForm;
+export default SpaceForm;

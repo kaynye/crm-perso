@@ -9,7 +9,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from core.models import Organization, User
-from crm.models import Contact, Company, Contract, ContractTemplate
+from crm.models import Contact, Space, Contract, ContractTemplate
 from automation.models import AutomationRule
 from django.core import mail
 
@@ -91,13 +91,13 @@ def run_test():
     )
     print(f"Template: {template.name}")
 
-    # 4. Create Company (Client)
-    print("\n4. Creating Client Company...")
-    company, created = Company.objects.get_or_create(
+    # 4. Create Space (Client)
+    print("\n4. Creating Client Space...")
+    space, created = Space.objects.get_or_create(
         name="Acme Clients Inc",
         organization=org
     )
-    print(f"Company: {company.name}")
+    print(f"Space: {space.name}")
 
     # 5. Create Contract (Triggers Automation)
     print("\n5. Creating Contract (Should Trigger Automation)...")
@@ -106,7 +106,7 @@ def run_test():
     # checking if automation triggers on creation
     contract = Contract.objects.create(
         title="Project Alpha Contract",
-        company=company,
+        space=space,
         organization=org,
         status="draft",
         amount=10000.00,

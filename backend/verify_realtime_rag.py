@@ -1,5 +1,5 @@
 from tasks.models import Task
-from crm.models import Company
+from crm.models import Space
 from core.models import Organization, User
 from ai_assistant.vector_store import VectorStore
 import time
@@ -12,7 +12,7 @@ user = User.objects.filter(organization=org).first()
 if not user:
     user = User.objects.create(username="rag_tester", email="rag@test.com", organization=org)
 
-company = Company.objects.create(name="SpaceX", industry="Aerospace", organization=org)
+space = Space.objects.create(name="SpaceX", industry="Aerospace", organization=org)
 
 # 1. Create Task
 print("\n1. Creating Task 'Buy a spaceship'...")
@@ -21,7 +21,7 @@ task = Task.objects.create(
     description="Need to go to Mars",
     assigned_to=user,
     organization=org,
-    company=company
+    space=space
 )
 
 # Wait a moment for signal (synchronous but good practice)
@@ -74,6 +74,6 @@ else:
     print(f"FAIL: Task still in index: {results['documents'][0][0][:50]}...")
 
 # Cleanup
-company.delete()
+space.delete()
 if user.username == "rag_tester":
     user.delete()

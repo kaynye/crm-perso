@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q, Case, When, Value, IntegerField
 from pages.models import Page
-from crm.models import Company, Contact
+from crm.models import Space, Contact
 from tasks.models import Task
 from django.contrib.auth import get_user_model
 
@@ -36,14 +36,14 @@ class MentionSearchView(APIView):
                 'url': f'/pages/{page.id}'
             })
 
-        # Search Companies
-        companies = Company.objects.filter(organization=request.user.organization, name__icontains=query)[:5]
-        for company in companies:
+        # Search Spaces
+        spaces = Space.objects.filter(organization=request.user.organization, name__icontains=query)[:5]
+        for space in spaces:
             results.append({
-                'id': str(company.id),
-                'type': 'company',
-                'label': company.name,
-                'url': f'/crm/companies/{company.id}'
+                'id': str(space.id),
+                'type': 'space',
+                'label': space.name,
+                'url': f'/crm/spaces/{space.id}'
             })
 
         # Search Contacts
@@ -104,15 +104,15 @@ class GlobalSearchView(APIView):
                 'url': f'/databases/{db.id}'
             })
 
-        # Search Companies
-        companies = Company.objects.filter(organization=request.user.organization, name__icontains=query)[:5]
-        for company in companies:
+        # Search Spaces
+        spaces = Space.objects.filter(organization=request.user.organization, name__icontains=query)[:5]
+        for space in spaces:
             results.append({
-                'id': str(company.id),
-                'type': 'company',
-                'title': company.name,
-                'subtitle': 'Company',
-                'url': f'/crm/companies/{company.id}'
+                'id': str(space.id),
+                'type': 'space',
+                'title': space.name,
+                'subtitle': 'Space',
+                'url': f'/crm/spaces/{space.id}'
             })
 
         # Search Contacts
@@ -205,7 +205,7 @@ class DashboardView(APIView):
         active_contracts_data = [{
             'id': str(c.id),
             'title': c.title,
-            'company': c.company.name,
+            'space': c.space.name,
             'end_date': c.end_date,
             'amount': c.amount
         } for c in active_contracts]

@@ -1,7 +1,7 @@
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
 from datetime import timedelta
-from crm.models import Company, Contract, Meeting
+from crm.models import Space, Contract, Meeting
 from tasks.models import Task
 
 class AnalyticsTools:
@@ -9,7 +9,7 @@ class AnalyticsTools:
     def analyze_data(entity_type, metric='count', time_period=None, filters=None, user=None):
         """
         Performs analysis on data.
-        entity_type: 'company', 'contract', 'task', 'meeting'
+        entity_type: 'space', 'contract', 'task', 'meeting'
         metric: 'count', 'sum_amount' (for contracts)
         time_period: 'this_month', 'last_month', 'this_year', 'all_time'
         filters: dict of additional filters (e.g. {'status': 'signed'})
@@ -18,8 +18,8 @@ class AnalyticsTools:
             return "Erreur: Impossible de déterminer l'organisation. Utilisateur non authentifié."
             
         queryset = None
-        if entity_type == 'company':
-            queryset = Company.objects.filter(organization=user.organization)
+        if entity_type == 'space':
+            queryset = Space.objects.filter(organization=user.organization)
         elif entity_type == 'contract':
             queryset = Contract.objects.filter(organization=user.organization)
         elif entity_type == 'task':
@@ -55,12 +55,12 @@ class AnalyticsTools:
             clean_filters = {}
             for k, v in filters.items():
                 if v and v != 'any':
-                    if k == 'company' or k == 'company_name':
-                        # Handle company name or ID
+                    if k == 'space' or k == 'space_name':
+                        # Handle space name or ID
                         if isinstance(v, int) or (isinstance(v, str) and v.isdigit()):
-                            clean_filters['company__id'] = v
+                            clean_filters['space__id'] = v
                         else:
-                            clean_filters['company__name__icontains'] = v
+                            clean_filters['space__name__icontains'] = v
                     else:
                         clean_filters[k] = v
             queryset = queryset.filter(**clean_filters)
@@ -87,31 +87,31 @@ class AnalyticsTools:
             
         elif metric == 'top_clients_revenue':
             # Top clients by signed contract amount
-            top_companies = Contract.objects.filter(
+            top_spaces = Contract.objects.filter(
                 organization=user.organization, 
                 status='signed'
-            ).values('company__name').annotate(total_revenue=Sum('amount')).order_by('-total_revenue')[:5]
+            ).values('space__name').annotate(total_revenue=Sum('amount')).order_by('-total_revenue')[:5]
             
-            if not top_companies:
+            if not top_spaces:
                 return "Aucun revenu trouvé (contrats signés)."
                 
             report = "Top Clients par Revenu (Contrats Signés) :\n"
-            for c in top_companies:
-                report += f"- {c['company__name']}: {c['total_revenue']} €\n"
+            for c in top_spaces:
+                report += f"- {c['space__name']}: {c['total_revenue']} €\n"
             return report
  
         elif metric == 'top_clients_activity':
             # Top clients by meetings count
-            top_companies = Meeting.objects.filter(
+            top_spaces = Meeting.objects.filter(
                 organization=user.organization
-            ).values('company__name').annotate(total_meetings=Count('id')).order_by('-total_meetings')[:5]
+            ).values('space__name').annotate(total_meetings=Count('id')).order_by('-total_meetings')[:5]
             
-            if not top_companies:
+            if not top_spaces:
                 return "Aucune activité de réunion trouvée."
                 
             report = "Top Clients par Activité (Réunions) :\n"
-            for c in top_companies:
-                report += f"- {c['company__name']}: {c['total_meetings']} réunions\n"
+            for c in top_spaces:
+                report += f"- {c['space__name']}: {c['total_meetings']} réunions\n"
             return report
 
         return f"Analyse terminée. Résultat : {queryset.count()}"

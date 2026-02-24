@@ -7,17 +7,18 @@ interface Document {
     name: string;
     file: string;
     uploaded_at: string;
-    company_name?: string;
+    space_name?: string;
     contract_title?: string;
 }
 
 interface DocumentListProps {
-    companyId?: string;
+    spaceId?: string;
     contractId?: string;
     showFilters?: boolean;
+    canEdit?: boolean;
 }
 
-const DocumentList: React.FC<DocumentListProps> = ({ companyId, contractId, showFilters = false }) => {
+const DocumentList: React.FC<DocumentListProps> = ({ spaceId, contractId, showFilters = false, canEdit = true }) => {
     const [documents, setDocuments] = useState<Document[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -26,13 +27,13 @@ const DocumentList: React.FC<DocumentListProps> = ({ companyId, contractId, show
 
     useEffect(() => {
         fetchDocuments();
-    }, [companyId, contractId]);
+    }, [spaceId, contractId]);
 
     const fetchDocuments = async () => {
         try {
             let url = '/crm/documents/';
             const params = new URLSearchParams();
-            if (companyId) params.append('company', companyId);
+            if (spaceId) params.append('space', spaceId);
             if (contractId) params.append('contract', contractId);
 
             if (params.toString()) {
@@ -60,7 +61,7 @@ const DocumentList: React.FC<DocumentListProps> = ({ companyId, contractId, show
         const formData = new FormData();
         formData.append('file', uploadFile);
         formData.append('name', uploadName);
-        if (companyId) formData.append('company', companyId);
+        if (spaceId) formData.append('space', spaceId);
         if (contractId) formData.append('contract', contractId);
 
         try {
@@ -100,46 +101,47 @@ const DocumentList: React.FC<DocumentListProps> = ({ companyId, contractId, show
 
     return (
         <div className="space-y-6">
-            {/* ... existing upload section ... */}
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                    <Upload size={16} className="mr-2" />
-                    Ajouter un document
-                </h3>
-                <form onSubmit={handleUpload} className="flex gap-4 items-end">
-                    <div className="flex-1">
-                        <input
-                            type="text"
-                            placeholder="Nom du document"
-                            className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            value={uploadName}
-                            onChange={(e) => setUploadName(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <div className="flex-1">
-                        <input
-                            type="file"
-                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                            onChange={(e) => {
-                                const file = e.target.files ? e.target.files[0] : null;
-                                setUploadFile(file);
-                                if (file && !uploadName) {
-                                    setUploadName(file.name.split('.').slice(0, -1).join('.'));
-                                }
-                            }}
-                            required
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={isUploading}
-                        className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                    >
-                        {isUploading ? 'Envoi...' : 'Uploader'}
-                    </button>
-                </form>
-            </div>
+            {canEdit && (
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                        <Upload size={16} className="mr-2" />
+                        Ajouter un document
+                    </h3>
+                    <form onSubmit={handleUpload} className="flex gap-4 items-end">
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                placeholder="Nom du document"
+                                className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                value={uploadName}
+                                onChange={(e) => setUploadName(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <input
+                                type="file"
+                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                onChange={(e) => {
+                                    const file = e.target.files ? e.target.files[0] : null;
+                                    setUploadFile(file);
+                                    if (file && !uploadName) {
+                                        setUploadName(file.name.split('.').slice(0, -1).join('.'));
+                                    }
+                                }}
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={isUploading}
+                            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                            {isUploading ? 'Envoi...' : 'Uploader'}
+                        </button>
+                    </form>
+                </div>
+            )}
 
             {/* List Section */}
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -166,7 +168,7 @@ const DocumentList: React.FC<DocumentListProps> = ({ companyId, contractId, show
                                 </td>
                                 {showFilters && (
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {doc.company_name && <span className="mr-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">{doc.company_name}</span>}
+                                        {doc.space_name && <span className="mr-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">{doc.space_name}</span>}
                                         {doc.contract_title && <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">{doc.contract_title}</span>}
                                     </td>
                                 )}
@@ -181,9 +183,11 @@ const DocumentList: React.FC<DocumentListProps> = ({ companyId, contractId, show
                                     <a href={doc.file} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900 mr-4" title="Télécharger">
                                         <Download size={18} />
                                     </a>
-                                    <button onClick={() => handleDelete(doc.id)} className="text-red-600 hover:text-red-900" title="Supprimer">
-                                        <Trash2 size={18} />
-                                    </button>
+                                    {canEdit && (
+                                        <button onClick={() => handleDelete(doc.id)} className="text-red-600 hover:text-red-900" title="Supprimer">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         ))}

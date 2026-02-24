@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from .tools.crm import CRMTools
 from .tools.tasks import TaskTools
 from .tools.meetings import MeetingTools
-from crm.models import Company, Contract, Meeting
+from crm.models import Space, Contract, Meeting
 from tasks.models import Task
 
 # Configure logging to stderr so it doesn't interfere with stdout JSON-RPC
@@ -16,8 +16,8 @@ logger = logging.getLogger("mcp_server")
 class MCPServer:
     def __init__(self):
         self.tools = {
-            "create_company": {
-                "description": "Create a new company",
+            "create_space": {
+                "description": "Create a new space",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -28,7 +28,7 @@ class MCPServer:
                     },
                     "required": ["name"]
                 },
-                "handler": CRMTools.create_company
+                "handler": CRMTools.create_space
             },
             "create_contact": {
                 "description": "Create a new contact",
@@ -37,11 +37,11 @@ class MCPServer:
                     "properties": {
                         "first_name": {"type": "string"},
                         "last_name": {"type": "string"},
-                        "company_name": {"type": "string"},
+                        "space_name": {"type": "string"},
                         "email": {"type": "string"},
                         "position": {"type": "string"}
                     },
-                    "required": ["first_name", "last_name", "company_name"]
+                    "required": ["first_name", "last_name", "space_name"]
                 },
                 "handler": CRMTools.create_contact
             },
@@ -65,11 +65,11 @@ class MCPServer:
                     "type": "object",
                     "properties": {
                         "title": {"type": "string"},
-                        "company_name": {"type": "string"},
+                        "space_name": {"type": "string"},
                         "date": {"type": "string", "description": "YYYY-MM-DD HH:MM:SS"},
                         "type": {"type": "string", "enum": ["video", "phone", "in_person"]}
                     },
-                    "required": ["title", "company_name", "date"]
+                    "required": ["title", "space_name", "date"]
                 },
                 "handler": MeetingTools.create_meeting
             }
@@ -169,11 +169,11 @@ class MCPServer:
         elif method == "resources/list":
             # List some basic resources
             resources = []
-            # Add companies
-            for company in Company.objects.all()[:10]:
+            # Add spaces
+            for space in Space.objects.all()[:10]:
                 resources.append({
-                    "uri": f"crm://companies/{company.id}",
-                    "name": f"Company: {company.name}",
+                    "uri": f"crm://spaces/{space.id}",
+                    "name": f"Space: {space.name}",
                     "mimeType": "application/json"
                 })
             # Add tasks
@@ -192,21 +192,21 @@ class MCPServer:
             uri = params.get("uri", "")
             content = ""
             
-            if uri.startswith("crm://companies/"):
-                company_id = uri.split("/")[-1]
+            if uri.startswith("crm://spaces/"):
+                space_id = uri.split("/")[-1]
                 try:
-                    company = Company.objects.get(id=company_id)
+                    space = Space.objects.get(id=space_id)
                     data = {
-                        "name": company.name,
-                        "industry": company.industry,
-                        "website": company.website,
-                        "notes": company.notes,
-                        "contracts": list(company.contracts.values('title', 'status')),
-                        "meetings": list(company.meetings.values('title', 'date'))
+                        "name": space.name,
+                        "industry": space.industry,
+                        "website": space.website,
+                        "notes": space.notes,
+                        "contracts": list(space.contracts.values('title', 'status')),
+                        "meetings": list(space.meetings.values('title', 'date'))
                     }
                     content = json.dumps(data, indent=2)
-                except Company.DoesNotExist:
-                    content = "Company not found"
+                except Space.DoesNotExist:
+                    content = "Space not found"
             
             elif uri.startswith("tasks://"):
                 task_id = uri.split("//")[1]

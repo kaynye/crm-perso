@@ -6,10 +6,10 @@ interface ShareModalProps {
     isOpen: boolean;
     onClose: () => void;
     contractId?: string;
-    companyId?: string;
+    spaceId?: string;
 }
 
-const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, companyId }) => {
+const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, spaceId }) => {
     const [links, setLinks] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -26,13 +26,13 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
         if (isOpen) {
             fetchLinks();
         }
-    }, [isOpen, contractId, companyId]);
+    }, [isOpen, contractId, spaceId]);
 
     const fetchLinks = async () => {
         setLoading(true);
         try {
-            // Filter by contract or company
-            const params = contractId ? { contract: contractId } : { company: companyId };
+            // Filter by contract or space
+            const params = contractId ? { contract: contractId } : { space: spaceId };
             const res = await api.get('/crm/shared-links/', { params });
             // Handle pagination if present
             setLinks(res.data.results || res.data);
@@ -47,7 +47,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, contractId, co
         try {
             const payload = {
                 contract: contractId,
-                company: companyId,
+                space: spaceId,
                 allow_tasks: allowTasks,
                 allow_task_creation: allowTaskCreation,
                 allow_meetings: allowMeetings,

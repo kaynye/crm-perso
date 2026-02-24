@@ -1,15 +1,15 @@
-from crm.models import Company, Contact, Contract, Meeting
+from crm.models import Space, Contact, Contract, Meeting
 from django.utils import timezone
 from datetime import datetime
 
 class CRMTools:
     @staticmethod
-    def create_company(name, industry="", size="", website="", user=None):
-        """Creates a new company."""
+    def create_space(name, industry="", size="", website="", user=None):
+        """Creates a new space."""
         if not user or not hasattr(user, 'organization'):
             return "Erreur: Impossible de déterminer l'organisation."
 
-        company, created = Company.objects.get_or_create(
+        space, created = Space.objects.get_or_create(
             name=name,
             organization=user.organization,
             defaults={
@@ -24,57 +24,57 @@ class CRMTools:
                 "action": {
                     "type": "NAVIGATE",
                     "label": f"Voir {name}",
-                    "url": f"/crm/companies/{company.id}"
+                    "url": f"/crm/spaces/{space.id}"
                 }
             }
         else:
             return f"L'entreprise '{name}' existe déjà."
 
     @staticmethod
-    def create_contact(first_name, last_name, company_name="", email="", position="", user=None):
-        """Creates a new contact and links to a company if found."""
+    def create_contact(first_name, last_name, space_name="", email="", position="", user=None):
+        """Creates a new contact and links to a space if found."""
         if not user or not hasattr(user, 'organization'):
             return "Erreur: Impossible de déterminer l'organisation."
 
-        company = None
-        if company_name:
-            company = Company.objects.filter(name__icontains=company_name, organization=user.organization).first()
+        space = None
+        if space_name:
+            space = Space.objects.filter(name__icontains=space_name, organization=user.organization).first()
         
         contact = Contact.objects.create(
             first_name=first_name,
             last_name=last_name,
-            company=company,
+            space=space,
             email=email,
             position=position,
             organization=user.organization
         )
         
         msg = f"Contact '{first_name} {last_name}' créé."
-        if company:
-            msg += f" Lié à l'entreprise '{company.name}'."
+        if space:
+            msg += f" Lié à l'entreprise '{space.name}'."
         else:
             msg += " Aucune entreprise liée."
         return msg
 
     @staticmethod
-    def create_contract(title, company_name, amount=None, status='draft', user=None):
-        """Creates a new contract linked to a company."""
+    def create_contract(title, space_name, amount=None, status='draft', user=None):
+        """Creates a new contract linked to a space."""
         if not user or not hasattr(user, 'organization'):
             return "Erreur: Impossible de déterminer l'organisation."
 
-        company = Company.objects.filter(name__icontains=company_name, organization=user.organization).first()
-        if not company:
-            return f"Erreur : Entreprise '{company_name}' introuvable. Veuillez d'abord créer l'entreprise."
+        space = Space.objects.filter(name__icontains=space_name, organization=user.organization).first()
+        if not space:
+            return f"Erreur : Entreprise '{space_name}' introuvable. Veuillez d'abord créer l'entreprise."
             
         contract = Contract.objects.create(
             title=title,
-            company=company,
+            space=space,
             amount=amount,
             status=status,
             organization=user.organization
         )
         return {
-            "message": f"Contrat '{title}' créé pour {company_name}.",
+            "message": f"Contrat '{title}' créé pour {space_name}.",
             "action": {
                 "type": "NAVIGATE",
                 "label": f"Voir le contrat",
@@ -100,8 +100,8 @@ class CRMTools:
             return "Erreur: Impossible de déterminer l'organisation."
 
         entity = None
-        if entity_type == 'company':
-            entity = Company.objects.filter(id=entity_id, organization=user.organization).first()
+        if entity_type == 'space':
+            entity = Space.objects.filter(id=entity_id, organization=user.organization).first()
         elif entity_type == 'contact':
             entity = Contact.objects.filter(id=entity_id, organization=user.organization).first()
         elif entity_type == 'contract':
@@ -127,39 +127,39 @@ class CRMTools:
             "action": {
                 "type": "NAVIGATE",
                 "label": f"Voir {entity_type.capitalize()}",
-                "url": f"/crm/{entity_type if entity_type != 'company' else 'companies'}/{entity_id}" if entity_type != 'contract' else f"/crm/contracts/{entity_id}"
+                "url": f"/crm/{entity_type if entity_type != 'space' else 'spaces'}/{entity_id}" if entity_type != 'contract' else f"/crm/contracts/{entity_id}"
             }
         }
     @staticmethod
-    def update_company(name, industry=None, size=None, website=None, notes=None, user=None):
-        """Updates an existing company."""
+    def update_space(name, industry=None, size=None, website=None, notes=None, user=None):
+        """Updates an existing space."""
         if not user or not hasattr(user, 'organization'):
             return "Erreur: Impossible de déterminer l'organisation."
 
-        company = Company.objects.filter(name__icontains=name, organization=user.organization).first()
-        if not company:
+        space = Space.objects.filter(name__icontains=name, organization=user.organization).first()
+        if not space:
             return f"Erreur : Entreprise '{name}' introuvable."
             
         changes = []
         if industry is not None:
-            company.industry = industry
+            space.industry = industry
             changes.append(f"secteur ({industry})")
         if size is not None:
-            company.size = size
+            space.size = size
             changes.append(f"taille ({size})")
         if website is not None:
-            company.website = website
+            space.website = website
             changes.append(f"site web ({website})")
         if notes is not None:
-            company.notes = notes
+            space.notes = notes
             changes.append("notes")
             
-        company.save()
+        space.save()
         
         if not changes:
             return f"Aucune modification demandée pour '{name}'."
             
-        return f"Entreprise '{company.name}' mise à jour : {', '.join(changes)}."
+        return f"Entreprise '{space.name}' mise à jour : {', '.join(changes)}."
 
     @staticmethod
     def update_contact(name, email=None, position=None, phone=None, user=None):
@@ -197,27 +197,27 @@ class CRMTools:
         return f"Contact '{contact.first_name} {contact.last_name}' mis à jour : {', '.join(changes)}."
         
     @staticmethod
-    def get_company_details(name, user=None):
-        """Gets full details of a company."""
+    def get_space_details(name, user=None):
+        """Gets full details of a space."""
         if not user or not hasattr(user, 'organization'):
             return "Erreur: Impossible de déterminer l'organisation."
             
-        company = Company.objects.filter(name__icontains=name, organization=user.organization).first()
-        if not company:
+        space = Space.objects.filter(name__icontains=name, organization=user.organization).first()
+        if not space:
              return f"Erreur : Entreprise '{name}' introuvable."
              
         # Build text summary
-        details = f"Détails de {company.name}:\n"
-        details += f"- Secteur: {company.industry}\n"
-        details += f"- Taille: {company.size}\n"
-        details += f"- Site: {company.website}\n"
-        details += f"- Adresse: {company.address}\n"
-        details += f"- Notes: {company.notes}\n"
+        details = f"Détails de {space.name}:\n"
+        details += f"- Secteur: {space.industry}\n"
+        details += f"- Taille: {space.size}\n"
+        details += f"- Site: {space.website}\n"
+        details += f"- Adresse: {space.address}\n"
+        details += f"- Notes: {space.notes}\n"
         
         # Related counts
-        contact_count = company.contacts.count()
-        meeting_count = company.meetings.count()
-        contract_count = company.contracts.count()
+        contact_count = space.contacts.count()
+        meeting_count = space.meetings.count()
+        contract_count = space.contracts.count()
         
         details += f"\nRelations:\n- {contact_count} contacts\n- {meeting_count} réunions\n- {contract_count} contrats"
         

@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from ai_assistant.signals import update_vector_index
-from crm.models import Company, Contract, Meeting
+from crm.models import Space, Contract, Meeting
 from tasks.models import Task
 from pages.models import Page
 from ai_assistant.rag import RAGService
@@ -11,19 +11,19 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("Starting RAG Re-indexing...")
 
-        # Companies
-        companies = Company.objects.all()
-        for c in companies:
+        # Spaces
+        spaces = Space.objects.all()
+        for c in spaces:
             if not c.organization: continue
-            text = f"Company: {c.name}\nIndustry: {c.industry}\nSize: {c.size}\nAddress: {c.address}\nNotes: {c.notes}"
-            update_vector_index(c, "company", text, c.name, c.organization.id)
-        self.stdout.write(f"Indexed {companies.count()} companies.")
+            text = f"Space: {c.name}\nIndustry: {c.industry}\nSize: {c.size}\nAddress: {c.address}\nNotes: {c.notes}"
+            update_vector_index(c, "space", text, c.name, c.organization.id)
+        self.stdout.write(f"Indexed {spaces.count()} spaces.")
 
         # Contracts
         contracts = Contract.objects.all()
         for c in contracts:
             if not c.organization: continue
-            text = f"Contract: {c.title}\nCompany: {c.company.name if c.company else 'N/A'}\nStatus: {c.status}\nAmount: {c.amount}\nContent: {c.extracted_text or ''}"
+            text = f"Contract: {c.title}\nSpace: {c.space.name if c.space else 'N/A'}\nStatus: {c.status}\nAmount: {c.amount}\nContent: {c.extracted_text or ''}"
             update_vector_index(c, "contract", text, c.title, c.organization.id)
         self.stdout.write(f"Indexed {contracts.count()} contracts.")
 
@@ -32,7 +32,7 @@ class Command(BaseCommand):
         for m in meetings:
             if not m.organization: continue
             clean_notes = RAGService._parse_notes(m.notes)
-            text = f"Meeting: {m.title}\nDate: {m.date}\nCompany: {m.company.name if m.company else 'N/A'}\nNotes: {clean_notes}"
+            text = f"Meeting: {m.title}\nDate: {m.date}\nSpace: {m.space.name if m.space else 'N/A'}\nNotes: {clean_notes}"
             update_vector_index(m, "meeting", text, m.title, m.organization.id)
         self.stdout.write(f"Indexed {meetings.count()} meetings.")
         

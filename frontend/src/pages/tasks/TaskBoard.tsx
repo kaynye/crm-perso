@@ -128,10 +128,10 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ filter }) => {
                                     {new Date(task.due_date).toLocaleDateString('fr-FR')}
                                 </span>
                             )}
-                            {task.company_name && (
+                            {task.space_name && (
                                 <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 flex items-center">
                                     <span className="w-1 h-1 rounded-full bg-blue-400 mr-1"></span>
-                                    {task.company_name}
+                                    {task.space_name}
                                 </span>
                             )}
                         </div>

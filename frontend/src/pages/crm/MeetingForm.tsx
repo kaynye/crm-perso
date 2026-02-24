@@ -13,10 +13,10 @@ const MeetingForm: React.FC = () => {
         title: '',
         date: '',
         type: 'video',
-        company: '',
+        space: '',
         contract: '',
     });
-    const [companies, setCompanies] = useState<any[]>([]);
+    const [spaces, setSpaces] = useState<any[]>([]);
     const [contracts, setContracts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
@@ -24,12 +24,12 @@ const MeetingForm: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch companies for dropdown
-                const companiesRes = await api.get('/crm/companies/');
-                if (companiesRes.data.results) {
-                    setCompanies(companiesRes.data.results);
+                // Fetch spaces for dropdown
+                const spacesRes = await api.get('/crm/spaces/');
+                if (spacesRes.data.results) {
+                    setSpaces(spacesRes.data.results);
                 } else {
-                    setCompanies(companiesRes.data);
+                    setSpaces(spacesRes.data);
                 }
 
                 // If editing, fetch meeting details
@@ -37,9 +37,9 @@ const MeetingForm: React.FC = () => {
                     const meetingRes = await api.get(`/crm/meetings/${id}/`);
                     const meeting = meetingRes.data;
 
-                    // Fetch contracts for the selected company
-                    if (meeting.company) {
-                        const contractsRes = await api.get(`/crm/contracts/?company=${meeting.company}`);
+                    // Fetch contracts for the selected space
+                    if (meeting.space) {
+                        const contractsRes = await api.get(`/crm/contracts/?space=${meeting.space}`);
                         if (contractsRes.data.results) {
                             setContracts(contractsRes.data.results);
                         } else {
@@ -51,16 +51,16 @@ const MeetingForm: React.FC = () => {
                         title: meeting.title,
                         date: meeting.date ? new Date(meeting.date).toISOString().slice(0, 16) : '',
                         type: meeting.type,
-                        company: meeting.company,
+                        space: meeting.space,
                         contract: meeting.contract || '',
                     });
                 } else {
                     // Initialize from URL params if creating new
-                    const companyId = searchParams.get('company');
+                    const spaceId = searchParams.get('space');
                     const contractId = searchParams.get('contract');
 
-                    if (companyId) {
-                        const contractsRes = await api.get(`/crm/contracts/?company=${companyId}`);
+                    if (spaceId) {
+                        const contractsRes = await api.get(`/crm/contracts/?space=${spaceId}`);
                         if (contractsRes.data.results) {
                             setContracts(contractsRes.data.results);
                         } else {
@@ -70,7 +70,7 @@ const MeetingForm: React.FC = () => {
 
                     setFormData(prev => ({
                         ...prev,
-                        company: companyId || '',
+                        space: spaceId || '',
                         contract: contractId || '',
                     }));
                 }
@@ -83,11 +83,11 @@ const MeetingForm: React.FC = () => {
         fetchData();
     }, [id, searchParams]);
 
-    const handleCompanyChange = async (companyId: string) => {
-        setFormData(prev => ({ ...prev, company: companyId, contract: '' }));
-        if (companyId) {
+    const handleSpaceChange = async (spaceId: string) => {
+        setFormData(prev => ({ ...prev, space: spaceId, contract: '' }));
+        if (spaceId) {
             try {
-                const res = await api.get(`/crm/contracts/?company=${companyId}`);
+                const res = await api.get(`/crm/contracts/?space=${spaceId}`);
                 if (res.data.results) {
                     setContracts(res.data.results);
                 } else {
@@ -108,7 +108,7 @@ const MeetingForm: React.FC = () => {
         const payload: any = {
             title: formData.title,
             type: formData.type,
-            company: formData.company,
+            space: formData.space,
             contract: formData.contract || null,
         };
 
@@ -135,7 +135,7 @@ const MeetingForm: React.FC = () => {
         if (window.confirm('Êtes-vous sûr de vouloir supprimer cette réunion ?')) {
             try {
                 await api.delete(`/crm/meetings/${id}/`);
-                navigate('/crm/companies'); // Or back to where we came from
+                navigate('/crm/spaces'); // Or back to where we came from
             } catch (error) {
                 console.error("Failed to delete meeting", error);
                 alert("Échec de la suppression de la réunion");
@@ -182,15 +182,15 @@ const MeetingForm: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Entreprise</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Espace</label>
                         <select
                             required
-                            value={formData.company}
-                            onChange={e => handleCompanyChange(e.target.value)}
+                            value={formData.space}
+                            onChange={e => handleSpaceChange(e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         >
-                            <option value="">Sélectionner une entreprise</option>
-                            {companies.map(c => (
+                            <option value="">Sélectionner une espace</option>
+                            {spaces.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
                         </select>
@@ -202,7 +202,7 @@ const MeetingForm: React.FC = () => {
                             value={formData.contract}
                             onChange={e => setFormData({ ...formData, contract: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            disabled={!formData.company}
+                            disabled={!formData.space}
                         >
                             <option value="">Sélectionner un contrat</option>
                             {contracts.map(c => (

@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from core.models import Organization
-from crm.models import Company
+from crm.models import Space
 from tasks.models import Task
 from ai_assistant.services import LLMService
 
@@ -26,7 +26,7 @@ class TaskExtractionTest(TestCase):
     def setUp(self):
         self.org = Organization.objects.create(name="Org Extract")
         self.user = User.objects.create_user(username='extractor', email='e@test.com', password='pw', organization=self.org)
-        self.company = Company.objects.create(name="Expenséo", organization=self.org)
+        self.space = Space.objects.create(name="Expenséo", organization=self.org)
         
         self.mock_llm = MockLLMService()
         self.service = LLMService() # We only use its _detect_intent logic potentially, but here we test _execute_tool via service logic or tool directly.
@@ -44,7 +44,7 @@ class TaskExtractionTest(TestCase):
             text="Meeting notes...", 
             llm_service=self.mock_llm, 
             user=self.user, 
-            company_name="Expenséo", 
+            space_name="Expenséo", 
             dry_run=True
         )
         
@@ -63,7 +63,7 @@ class TaskExtractionTest(TestCase):
             text="Meeting notes...", 
             llm_service=self.mock_llm, 
             user=self.user, 
-            company_name="Expenséo", 
+            space_name="Expenséo", 
             dry_run=False
         )
         
@@ -72,4 +72,4 @@ class TaskExtractionTest(TestCase):
         
         # Check linking
         t1 = Task.objects.first()
-        self.assertEqual(t1.company, self.company)
+        self.assertEqual(t1.space, self.space)

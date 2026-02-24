@@ -191,7 +191,7 @@ const ContractDetail: React.FC = () => {
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-medium text-gray-900">Réunions</h2>
                             <button
-                                onClick={() => navigate(`/crm/meetings/new?contract=${id}&company=${contract.company}`)}
+                                onClick={() => navigate(`/crm/meetings/new?contract=${id}&space=${contract.space}`)}
                                 className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
                             >
                                 <Plus size={16} />
@@ -229,7 +229,7 @@ const ContractDetail: React.FC = () => {
 
                 {activeTab === 'documents' && (
                     <div className="p-6 overflow-y-auto h-full">
-                        <DocumentList contractId={id} companyId={contract.company} />
+                        <DocumentList contractId={id} spaceId={contract.space} />
                     </div>
                 )}
             </div>

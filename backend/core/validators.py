@@ -3,7 +3,7 @@ from rest_framework.exceptions import ValidationError
 def validate_cross_organization_reference(user, **kwargs):
     """
     Validates that all provided objects belong to the user's organization.
-    Usage: validate_cross_organization_reference(user, company=company_instance, contract=contract_instance)
+    Usage: validate_cross_organization_reference(user, space=space_instance, contract=contract_instance)
     """
     if not user.organization:
         raise ValidationError("User does not belong to an organization.")

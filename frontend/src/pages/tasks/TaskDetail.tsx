@@ -17,12 +17,14 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
     const navigate = useNavigate();
     const [task, setTask] = useState<any>(null);
     const [users, setUsers] = useState<any[]>([]);
+    const [spaces, setSpaces] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [editorData, setEditorData] = useState<OutputData>({ blocks: [] });
 
     useEffect(() => {
         fetchTask();
         fetchUsers();
+        fetchSpaces();
     }, [taskId]);
 
     const fetchTask = async () => {
@@ -59,6 +61,19 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
         } catch (error) {
             console.error("Failed to fetch users", error);
             setUsers([]);
+        }
+    };
+
+    const fetchSpaces = async () => {
+        try {
+            const response = await api.get('/crm/spaces/');
+            if (response.data.results) {
+                setSpaces(response.data.results);
+            } else if (Array.isArray(response.data)) {
+                setSpaces(response.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch spaces", error);
         }
     };
 
@@ -177,20 +192,30 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, onClose, onUpdate }) =>
                         />
                     </div>
 
-                    {/* Company (Read-only for now) */}
-                    {task.company_name && (
-                        <div className="flex items-center">
-                            <div className="w-32 flex items-center text-gray-500 text-sm">
-                                <Tag size={16} className="mr-2" /> Entreprise
-                            </div>
-                            <div
-                                className="text-sm text-indigo-600 font-medium px-2 py-1 -ml-2 cursor-pointer hover:underline"
-                                onClick={() => navigate(`/crm/companies/${task.linked_company_id}`)}
-                            >
-                                {task.company_name}
-                            </div>
+                    {/* Space */}
+                    <div className="flex items-center">
+                        <div className="w-32 flex items-center text-gray-500 text-sm">
+                            <Tag size={16} className="mr-2" /> Espace
                         </div>
-                    )}
+                        <select
+                            className="bg-transparent border-none text-sm text-gray-900 focus:ring-0 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 -ml-2 min-w-[200px]"
+                            value={task.space || task.linked_space_id || ''}
+                            onChange={(e) => handleSaveField('space', e.target.value || null)}
+                        >
+                            <option value="">Aucun espace</option>
+                            {spaces.map(space => (
+                                <option key={space.id} value={space.id}>{space.name}</option>
+                            ))}
+                        </select>
+                        {task.space && (
+                            <button
+                                onClick={() => navigate(`/crm/spaces/${task.space}`)}
+                                className="ml-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
+                            >
+                                Voir
+                            </button>
+                        )}
+                    </div>
 
                     {/* Category */}
                     <div className="flex items-center">

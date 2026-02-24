@@ -4,59 +4,59 @@ import api from '../../api/axios';
 import { Plus, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import ActionsMenu from '../../components/ActionsMenu';
 
-const CompanyList: React.FC = () => {
-    const [companies, setCompanies] = useState<any[]>([]);
+const SpaceList: React.FC = () => {
+    const [spaces, setSpaces] = useState<any[]>([]);
     const navigate = useNavigate();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
 
     useEffect(() => {
-        fetchCompanies();
+        fetchSpaces();
     }, []);
 
-    const fetchCompanies = async () => {
+    const fetchSpaces = async () => {
         try {
-            const response = await api.get('/crm/companies/');
+            const response = await api.get('/crm/spaces/');
             if (response.data.results) {
-                setCompanies(response.data.results);
+                setSpaces(response.data.results);
             } else {
-                setCompanies(response.data);
+                setSpaces(response.data);
             }
         } catch (error) {
-            console.error("Failed to fetch companies", error);
+            console.error("Failed to fetch spaces", error);
         }
     };
 
-    const createCompany = async () => {
-        const name = prompt("Nom de l'entreprise :");
+    const createSpace = async () => {
+        const name = prompt("Nom de l'espace :");
         if (name) {
             try {
-                const response = await api.post('/crm/companies/', { name });
-                navigate(`/crm/companies/${response.data.id}`);
+                const response = await api.post('/crm/spaces/', { name });
+                navigate(`/crm/spaces/${response.data.id}`);
             } catch (error) {
-                console.error("Failed to create company", error);
+                console.error("Failed to create space", error);
             }
         }
     };
 
-    const deleteCompany = async (id: string) => {
-        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette entreprise ?')) {
+    const deleteSpace = async (id: string) => {
+        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette espace ?')) {
             try {
-                await api.delete(`/crm/companies/${id}/`);
-                fetchCompanies();
+                await api.delete(`/crm/spaces/${id}/`);
+                fetchSpaces();
             } catch (error) {
-                console.error("Failed to delete company", error);
+                console.error("Failed to delete space", error);
             }
         }
     };
 
-    const filteredCompanies = companies.filter(company =>
-        company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.industry?.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredSpaces = spaces.filter(space =>
+        space.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        space.industry?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const sortedCompanies = [...filteredCompanies].sort((a, b) => {
+    const sortedSpaces = [...filteredSpaces].sort((a, b) => {
         if (!sortConfig) return 0;
 
         let aValue = a[sortConfig.key];
@@ -100,12 +100,12 @@ const CompanyList: React.FC = () => {
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Entreprises</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Espaces</h1>
                     <p className="text-gray-500 mt-1">Gérez votre portefeuille clients</p>
                 </div>
-                <button onClick={createCompany} className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm text-sm font-medium">
+                <button onClick={createSpace} className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm text-sm font-medium">
                     <Plus size={16} className="mr-2" />
-                    Nouvelle Entreprise
+                    Nouvelle Espace
                 </button>
             </div>
 
@@ -113,7 +113,7 @@ const CompanyList: React.FC = () => {
             <div className="mb-6">
                 <input
                     type="text"
-                    placeholder="Rechercher une entreprise..."
+                    placeholder="Rechercher une espace..."
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -163,36 +163,36 @@ const CompanyList: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
-                        {sortedCompanies.map((company) => (
-                            <tr key={company.id} className="hover:bg-gray-50/80 transition-colors group">
+                        {sortedSpaces.map((space) => (
+                            <tr key={space.id} className="hover:bg-gray-50/80 transition-colors group">
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <Link to={`/crm/companies/${company.id}`} className="text-gray-900 hover:text-black font-medium">
-                                        {company.name}
+                                    <Link to={`/crm/spaces/${space.id}`} className="text-gray-900 hover:text-black font-medium">
+                                        {space.name}
                                     </Link>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.industry || '-'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{space.industry || '-'}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {company.website ? (
-                                        <a href={company.website} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center">
-                                            {company.website} <ExternalLink size={12} className="ml-1" />
+                                    {space.website ? (
+                                        <a href={space.website} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center">
+                                            {space.website} <ExternalLink size={12} className="ml-1" />
                                         </a>
                                     ) : '-'}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {new Date(company.created_at).toLocaleDateString('fr-FR')}
+                                    {new Date(space.created_at).toLocaleDateString('fr-FR')}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                                     <ActionsMenu
-                                        onEdit={() => navigate(`/crm/companies/${company.id}`)}
-                                        onDelete={() => deleteCompany(company.id)}
+                                        onEdit={() => navigate(`/crm/spaces/${space.id}`)}
+                                        onDelete={() => deleteSpace(space.id)}
                                     />
                                 </td>
                             </tr>
                         ))}
-                        {sortedCompanies.length === 0 && (
+                        {sortedSpaces.length === 0 && (
                             <tr>
                                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                    Aucune entreprise trouvée
+                                    Aucune espace trouvée
                                 </td>
                             </tr>
                         )}
@@ -202,39 +202,39 @@ const CompanyList: React.FC = () => {
 
             {/* Mobile Cards */}
             <div className="md:hidden space-y-4">
-                {sortedCompanies.map((company) => (
-                    <div key={company.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                {sortedSpaces.map((space) => (
+                    <div key={space.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
                         <div className="flex justify-between items-start">
-                            <Link to={`/crm/companies/${company.id}`} className="text-lg font-semibold text-gray-900">
-                                {company.name}
+                            <Link to={`/crm/spaces/${space.id}`} className="text-lg font-semibold text-gray-900">
+                                {space.name}
                             </Link>
                             <ActionsMenu
-                                onEdit={() => navigate(`/crm/companies/${company.id}`)}
-                                onDelete={() => deleteCompany(company.id)}
+                                onEdit={() => navigate(`/crm/spaces/${space.id}`)}
+                                onDelete={() => deleteSpace(space.id)}
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 text-sm">
                             <div className="text-gray-500">Secteur</div>
-                            <div className="text-gray-900 font-medium text-right">{company.industry || '-'}</div>
+                            <div className="text-gray-900 font-medium text-right">{space.industry || '-'}</div>
 
                             <div className="text-gray-500">Site Web</div>
                             <div className="text-right">
-                                {company.website ? (
-                                    <a href={company.website} target="_blank" rel="noreferrer" className="text-blue-500 flex items-center justify-end">
+                                {space.website ? (
+                                    <a href={space.website} target="_blank" rel="noreferrer" className="text-blue-500 flex items-center justify-end">
                                         Site <ExternalLink size={12} className="ml-1" />
                                     </a>
                                 ) : '-'}
                             </div>
 
                             <div className="text-gray-500">Créé le</div>
-                            <div className="text-gray-900 text-right">{new Date(company.created_at).toLocaleDateString('fr-FR')}</div>
+                            <div className="text-gray-900 text-right">{new Date(space.created_at).toLocaleDateString('fr-FR')}</div>
                         </div>
                     </div>
                 ))}
-                {filteredCompanies.length === 0 && (
+                {filteredSpaces.length === 0 && (
                     <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                        Aucune entreprise trouvée
+                        Aucune espace trouvée
                     </div>
                 )}
             </div>
@@ -242,4 +242,4 @@ const CompanyList: React.FC = () => {
     );
 };
 
-export default CompanyList;
+export default SpaceList;

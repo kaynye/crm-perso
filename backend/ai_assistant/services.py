@@ -125,11 +125,11 @@ class LLMService:
         if page_context and page_context.get('path'):
             path = page_context['path']
             # Simple parsing logic for context
-            if '/crm/companies/' in path and path.split('/')[-1].isdigit() == False:
-                from crm.models import Company
+            if '/crm/spaces/' in path and path.split('/')[-1].isdigit() == False:
+                from crm.models import Space
                 try:
                     cid = path.split('/')[-1]
-                    c = Company.objects.get(id=cid)
+                    c = Space.objects.get(id=cid)
                     context_str = f"USER IS VIEWING COMPANY: {c.name} (ID: {cid})"
                 except:
                     pass
@@ -228,11 +228,11 @@ class LLMService:
         """
         try:
             if tool_name == 'CREATE_COMPANY':
-                return CRMTools.create_company(user=user, **params)
+                return CRMTools.create_space(user=user, **params)
             elif tool_name == 'UPDATE_COMPANY':
-                return CRMTools.update_company(user=user, **params)
+                return CRMTools.update_space(user=user, **params)
             elif tool_name == 'GET_COMPANY_DETAILS':
-                return CRMTools.get_company_details(user=user, **params)
+                return CRMTools.get_space_details(user=user, **params)
             elif tool_name == 'CREATE_CONTACT':
                 return CRMTools.create_contact(user=user, **params)
             elif tool_name == 'UPDATE_CONTACT':
@@ -266,8 +266,8 @@ class LLMService:
                 if rag_context:
                     text_to_analyze += f"\n\nCONTEXTE ADDITIONNEL (RAG):\n{rag_context}"
                 
-                company_name = params.get('company_name')
-                company_name = params.get('company_name')
+                space_name = params.get('space_name')
+                space_name = params.get('space_name')
                 
                 # Check for dry_run intent (keywords like "Suggest", "What scan", "Proposed")
                 # Or simply default to True if not explicitly "Create"
@@ -284,7 +284,7 @@ class LLMService:
                 if "confirmation" in raw_text.lower() or "création" in raw_text.lower() or "create" in raw_text.lower() or "procéder" in raw_text.lower():
                     dry_run = False
                     
-                return TaskTools.extract_and_create_tasks(text_to_analyze, self, user=user, company_name=company_name, dry_run=dry_run, original_query=raw_text)
+                return TaskTools.extract_and_create_tasks(text_to_analyze, self, user=user, space_name=space_name, dry_run=dry_run, original_query=raw_text)
             elif tool_name == 'LIST_TASKS':
                 return TaskTools.list_tasks(user=user, **params)
             elif tool_name == 'ASK_USER':
@@ -446,7 +446,7 @@ class LLMService:
         Uses the LLM to extract search terms/entities from the user query.
         """
         system_prompt = """
-        Extract the key entities (Company names, Person names, Contract titles, specific topics) from the user's query.
+        Extract the key entities (Space names, Person names, Contract titles, specific topics) from the user's query.
         Return ONLY a comma-separated list of the most important search terms.
         Example: "Meeting with Acme Corp about the roadrunner project" -> "Acme Corp, roadrunner project"
         If no specific entities are found, return the key nouns.

@@ -1,14 +1,14 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Company
+from .models import Space
 from pages.models import Page
 
-@receiver(post_save, sender=Company)
-def create_company_wiki_page(sender, instance, created, **kwargs):
+@receiver(post_save, sender=Space)
+def create_space_wiki_page(sender, instance, created, **kwargs):
         Page.objects.create(
             title=instance.name,
             page_type='wiki',
-            company=instance,
+            space=instance,
             organization=instance.organization,
             content=f'{{"blocks": [{{"type": "header", "data": {{"text": "{instance.name} Wiki", "level": 1}}}}]}}'
         )

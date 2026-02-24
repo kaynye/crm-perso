@@ -98,7 +98,7 @@ class TaskTools:
         }
 
     @staticmethod
-    def extract_and_create_tasks(text, llm_service, user=None, company_name=None, dry_run=False, original_query=None):
+    def extract_and_create_tasks(text, llm_service, user=None, space_name=None, dry_run=False, original_query=None):
         """
         Uses LLM to extract tasks from text. 
         If dry_run=True, returns suggested tasks without creating.
@@ -107,11 +107,11 @@ class TaskTools:
         if not user or not hasattr(user, 'organization'):
             return "Erreur: Impossible de déterminer l'organisation. Utilisateur non authentifié."
 
-        company = None
-        if company_name:
-            from crm.models import Company
+        space = None
+        if space_name:
+            from crm.models import Space
             # Try exact match or contains
-            company = Company.objects.filter(organization=user.organization, name__icontains=company_name).first()
+            space = Space.objects.filter(organization=user.organization, name__icontains=space_name).first()
 
         now = timezone.localtime()
         prompt = f"""
@@ -195,7 +195,7 @@ class TaskTools:
                 suggestions.append({'label': f"{t.get('title')} ({due})", 'value': f"Create task {t.get('title')} due {due}"})
             
             # Format as a nice message + CHOICE actions
-            msg = f"J'ai identifié {len(tasks_data)} tâches potentielles pour {company.name if company else 'inconnu'} :\n"
+            msg = f"J'ai identifié {len(tasks_data)} tâches potentielles pour {space.name if space else 'inconnu'} :\n"
             for t in tasks_data:
                 msg += f"- {t.get('title')} (Pour le {t.get('due_date')})\n"
             
@@ -231,7 +231,7 @@ class TaskTools:
                 status=t.get('status', 'todo'),
                 due_date=due_date,
                 organization=user.organization,
-                company=company
+                space=space
             )
             created_count += 1
         return f"Génération réussie : {created_count} tâches créées."
