@@ -23,3 +23,10 @@ class NotificationSerializer(serializers.ModelSerializer):
         if obj.actor:
             return f"{obj.actor.first_name} {obj.actor.last_name}".strip() or obj.actor.username
         return "Système"
+
+from .models import UserFcmToken
+
+class UserFcmTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserFcmToken
+        fields = ('token', 'device_type')

@@ -4,6 +4,7 @@ from crum import get_current_user
 from core.models import Notification
 from .models import Space, ActivityLog, SpaceMember
 from pages.models import Page
+from core.services.fcm import send_push_notification
 
 @receiver(post_save, sender=Space)
 def create_space_wiki_page(sender, instance, created, **kwargs):
@@ -136,13 +137,25 @@ def contract_activity_log_post_save(sender, instance, created, **kwargs):
             # Notification on sign
             if instance.status == 'signed' and old_status != 'signed' and instance.space:
                 members = instance.space.members.exclude(id=user.id)
-                notifications = [
-                    Notification(
-                        recipient=member, actor=user, type='contract_signed',
-                        title="Contrat signé", message=f"Le contrat '{instance.title}' a été signé.",
-                        link=f"/crm/spaces/{instance.space.id}?tab=contracts"
-                    ) for member in members
-                ]
+                notifications = []
+                title = "Contrat signé"
+                message = f"Le contrat '{instance.title}' a été signé."
+                link = f"/crm/spaces/{instance.space.id}?tab=contracts"
+                
+                for member in members:
+                    notifications.append(
+                        Notification(
+                            recipient=member, actor=user, type='contract_signed',
+                            title=title, message=message, link=link
+                        )
+                    )
+                    send_push_notification(
+                        user=member,
+                        title=title,
+                        body=message,
+                        data={'url': link}
+                    )
+                    
                 if notifications:
                     Notification.objects.bulk_create(notifications)
 

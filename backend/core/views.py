@@ -349,3 +349,23 @@ class UploadView(APIView):
                 'size': file.size
             }
         })
+
+from .serializers import UserFcmTokenSerializer
+from .models import UserFcmToken
+
+class FcmTokenView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = UserFcmTokenSerializer(data=request.data)
+        if serializer.is_valid():
+            token = serializer.validated_data.get('token')
+            device_type = serializer.validated_data.get('device_type', '')
+            
+            UserFcmToken.objects.update_or_create(
+                user=request.user,
+                token=token,
+                defaults={'device_type': device_type}
+            )
+            return Response({'status': 'token saved'})
+        return Response(serializer.errors, status=400)

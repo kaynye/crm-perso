@@ -4,6 +4,7 @@ from crum import get_current_user
 from tasks.models import Task
 from crm.models import ActivityLog
 from core.models import Notification
+from core.services.fcm import send_push_notification
 
 @receiver(pre_save, sender=Task)
 def capture_old_task_state(sender, instance, **kwargs):
@@ -43,13 +44,21 @@ def task_post_save_actions(sender, instance, created, **kwargs):
         
         # Notification on assignment
         if instance.assigned_to and instance.assigned_to != user:
+            title = f"Nouvelle tâche assignée: {instance.title}"
+            message = f"La tâche '{instance.title}' vous a été assignée."
             Notification.objects.create(
                 recipient=instance.assigned_to,
                 actor=user,
                 type='task_assigned',
-                title=f"Nouvelle tâche assignée: {instance.title}",
-                message=f"La tâche '{instance.title}' vous a été assignée.",
+                title=title,
+                message=message,
                 link='/tasks'
+            )
+            send_push_notification(
+                user=instance.assigned_to,
+                title=title,
+                body=message,
+                data={'url': '/tasks'}
             )
             
     # 2. Handle Update
@@ -72,13 +81,21 @@ def task_post_save_actions(sender, instance, created, **kwargs):
             
             # Notification on re-assignment
             if instance.assigned_to and instance.assigned_to != user:
+                title = f"Tâche réassignée: {instance.title}"
+                message = f"La tâche '{instance.title}' vous a été assignée."
                 Notification.objects.create(
                     recipient=instance.assigned_to,
                     actor=user,
                     type='task_assigned',
-                    title=f"Tâche réassignée: {instance.title}",
-                    message=f"La tâche '{instance.title}' vous a été assignée.",
+                    title=title,
+                    message=message,
                     link='/tasks'
+                )
+                send_push_notification(
+                    user=instance.assigned_to,
+                    title=title,
+                    body=message,
+                    data={'url': '/tasks'}
                 )
 
         if details and hasattr(instance, 'space') and instance.space:

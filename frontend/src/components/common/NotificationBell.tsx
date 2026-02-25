@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import clsx from 'clsx';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { requestForToken, onMessageListener } from '../../lib/firebase';
 
 export interface Notification {
     id: string;
@@ -27,6 +28,19 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ direction = 'down',
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+
+    // Init Firebase Push Notifications
+    useEffect(() => {
+        requestForToken();
+
+        onMessageListener()
+            .then((payload: any) => {
+                console.log('Received foreground message: ', payload);
+                // Refetch notifications to reflect the new push natively
+                queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            })
+            .catch((err) => console.log('failed: ', err));
+    }, [queryClient]);
 
     // Fetch notifications
     const { data: notifications = [] } = useQuery<Notification[]>({
