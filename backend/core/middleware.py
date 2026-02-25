@@ -15,6 +15,7 @@ class RemoveXFrameOptionsMiddleware(MiddlewareMixin):
              # Allow any localhost port in dev
              allowed_origins.append("http://localhost:*")
              allowed_origins.append("http://127.0.0.1:*")
+             allowed_origins.append("http://192.168.1.36:*")
              
              # In dev, we can also just strip XFO to be sure, though CSP usually wins
              if 'X-Frame-Options' in response.headers:
@@ -28,3 +29,20 @@ class RemoveXFrameOptionsMiddleware(MiddlewareMixin):
         response['Content-Security-Policy'] = csp_value
         
         return response
+
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
+class JWTAuthMiddleware(MiddlewareMixin):
+    """
+    Middleware to force JWT authentication before crum middleware runs.
+    This ensures get_current_user() works nicely with DRF and SimpleJWT.
+    """
+    def process_request(self, request):
+        if not getattr(request, 'user', None) or not request.user.is_authenticated:
+            try:
+                auth = JWTAuthentication()
+                auth_tuple = auth.authenticate(request)
+                if auth_tuple:
+                    request.user = auth_tuple[0]
+            except Exception:
+                pass

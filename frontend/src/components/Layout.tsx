@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import CommandPalette from './CommandPalette';
 import ChatWidget from './ai/ChatWidget';
+import NotificationBell from './common/NotificationBell';
 import { Menu } from 'lucide-react';
 
 const Layout: React.FC = () => {
@@ -17,14 +18,19 @@ const Layout: React.FC = () => {
             <Sidebar isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
             <main className="flex-1 flex flex-col h-full overflow-hidden relative bg-white">
                 {/* Mobile Header */}
-                <div className="md:hidden p-4 border-b border-gray-100 flex items-center bg-white z-10">
-                    <button
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-md"
-                    >
-                        <Menu size={24} />
-                    </button>
-                    <span className="font-bold text-lg ml-2 text-gray-900">Nexus</span>
+                <div className="md:hidden p-4 border-b border-gray-100 flex items-center justify-between bg-white z-10 w-full">
+                    <div className="flex items-center">
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                        >
+                            <Menu size={24} />
+                        </button>
+                        <span className="font-bold text-lg ml-2 text-gray-900">Nexus</span>
+                    </div>
+                    <div>
+                        <NotificationBell />
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-auto">

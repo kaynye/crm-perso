@@ -26,26 +26,6 @@ class SpaceMemberViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['space', 'user']
 
-    def perform_create(self, serializer):
-        member = serializer.save()
-        ActivityLog.objects.create(
-            space=member.space,
-            actor=self.request.user,
-            action='created',
-            entity_type='Membre',
-            entity_name=f"{member.user.first_name} {member.user.last_name}".strip() or member.user.email
-        )
-
-    def perform_destroy(self, instance):
-        ActivityLog.objects.create(
-            space=instance.space,
-            actor=self.request.user,
-            action='deleted',
-            entity_type='Membre',
-            entity_name=f"{instance.user.first_name} {instance.user.last_name}".strip() or instance.user.email
-        )
-        super().perform_destroy(instance)
-
     def get_queryset(self):
         user = self.request.user
         if not user.is_authenticated or not hasattr(user, 'organization'):
@@ -90,48 +70,6 @@ class ContractViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
             organization=self.request.user.organization,
             created_by=self.request.user
         )
-        if contract.space:
-            ActivityLog.objects.create(
-                space=contract.space,
-                actor=self.request.user,
-                action='created',
-                entity_type='Contrat',
-                entity_name=contract.title
-            )
-
-    def perform_update(self, serializer):
-        old_contract = self.get_object()
-        old_status = old_contract.status
-        
-        contract = serializer.save()
-        
-        details = {}
-        if old_status != contract.status:
-            details['status'] = {
-                'old': old_status,
-                'new': contract.status
-            }
-            
-        if contract.space:
-            ActivityLog.objects.create(
-                space=contract.space,
-                actor=self.request.user,
-                action='updated',
-                entity_type='Contrat',
-                entity_name=contract.title,
-                details=details
-            )
-
-    def perform_destroy(self, instance):
-        if instance.space:
-            ActivityLog.objects.create(
-                space=instance.space,
-                actor=self.request.user,
-                action='deleted',
-                entity_type='Contrat',
-                entity_name=instance.title
-            )
-        super().perform_destroy(instance)
 
 class MeetingViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
     queryset = Meeting.objects.all()
@@ -153,36 +91,6 @@ class MeetingViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
             organization=self.request.user.organization,
             created_by=self.request.user
         )
-        if meeting.space:
-            ActivityLog.objects.create(
-                space=meeting.space,
-                actor=self.request.user,
-                action='created',
-                entity_type='Réunion',
-                entity_name=meeting.title
-            )
-
-    def perform_update(self, serializer):
-        meeting = serializer.save()
-        if meeting.space:
-            ActivityLog.objects.create(
-                space=meeting.space,
-                actor=self.request.user,
-                action='updated',
-                entity_type='Réunion',
-                entity_name=meeting.title
-            )
-
-    def perform_destroy(self, instance):
-        if instance.space:
-            ActivityLog.objects.create(
-                space=instance.space,
-                actor=self.request.user,
-                action='deleted',
-                entity_type='Réunion',
-                entity_name=instance.title
-            )
-        super().perform_destroy(instance)
 
 class DocumentViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
     queryset = Document.objects.all()
@@ -190,28 +98,6 @@ class DocumentViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
     permission_classes = [HasGeminiSecret, SpaceRolePermission]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['space', 'contract']
-
-    def perform_create(self, serializer):
-        document = serializer.save()
-        if document.space:
-            ActivityLog.objects.create(
-                space=document.space,
-                actor=self.request.user,
-                action='created',
-                entity_type='Document',
-                entity_name=document.name
-            )
-
-    def perform_destroy(self, instance):
-        if instance.space:
-            ActivityLog.objects.create(
-                space=instance.space,
-                actor=self.request.user,
-                action='deleted',
-                entity_type='Document',
-                entity_name=instance.name
-            )
-        super().perform_destroy(instance)
 
 class MeetingTemplateViewSet(OrganizationScopeMixin, viewsets.ModelViewSet):
     queryset = MeetingTemplate.objects.all()

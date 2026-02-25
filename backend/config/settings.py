@@ -15,9 +15,12 @@ ALLOWED_HOSTS = [
     'cms.2kvl.tech',
     'localhost',
     '127.0.0.1',
+    '192.168.1.36', 
     '[::1]',
     'crm-perso.vercel.app',
     'unsilly-dexter-unpersonifying.ngrok-free.dev',
+    'testserver',
+    '0.0.0.0'
 ]
 
 INSTALLED_APPS = [
@@ -49,6 +52,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.JWTAuthMiddleware',
+    'crum.CurrentRequestUserMiddleware', # To easily get current user in signals
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

@@ -9,3 +9,17 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'username', 'first_name', 'last_name', 'is_admin', 'organization', 'organization_name')
+
+from .models import Notification
+
+class NotificationSerializer(serializers.ModelSerializer):
+    actor_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notification
+        fields = ('id', 'type', 'title', 'message', 'link', 'is_read', 'created_at', 'actor', 'actor_name')
+        
+    def get_actor_name(self, obj):
+        if obj.actor:
+            return f"{obj.actor.first_name} {obj.actor.last_name}".strip() or obj.actor.username
+        return "Système"

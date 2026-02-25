@@ -1,6 +1,8 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from .models import Space
+from crum import get_current_user
+from core.models import Notification
+from .models import Space, ActivityLog, SpaceMember
 from pages.models import Page
 
 @receiver(post_save, sender=Space)
@@ -79,5 +81,124 @@ def delete_contract_file(sender, instance, **kwargs):
     """
     Deletes the file from filesystem/S3 when the Contract object is deleted.
     """
-    if instance.file:
+    if hasattr(instance, 'file') and instance.file:
         instance.file.delete(save=False)
+
+# --- New Signals for ActivityLog & Notifications ---
+
+@receiver(post_save, sender=SpaceMember)
+def spacemember_activity_log_post_save(sender, instance, created, **kwargs):
+    user = get_current_user()
+    if not user or not user.is_authenticated: return
+    if created:
+        name = f"{instance.user.first_name} {instance.user.last_name}".strip() or instance.user.email
+        ActivityLog.objects.create(
+            space=instance.space, actor=user, action='created',
+            entity_type='Membre', entity_name=name
+        )
+
+@receiver(post_delete, sender=SpaceMember)
+def spacemember_activity_log_post_delete(sender, instance, **kwargs):
+    user = get_current_user()
+    if not user or not user.is_authenticated: return
+    name = f"{instance.user.first_name} {instance.user.last_name}".strip() or instance.user.email
+    ActivityLog.objects.create(
+        space=instance.space, actor=user, action='deleted',
+        entity_type='Membre', entity_name=name
+    )
+
+@receiver(pre_save, sender=Contract)
+def capture_old_contract_state(sender, instance, **kwargs):
+    if instance.pk:
+        try:
+            old_instance = Contract.objects.get(pk=instance.pk)
+            instance._old_status = old_instance.status
+        except Contract.DoesNotExist:
+            pass
+
+@receiver(post_save, sender=Contract)
+def contract_activity_log_post_save(sender, instance, created, **kwargs):
+    user = get_current_user()
+    if not user or not user.is_authenticated: return
+
+    if created:
+        if instance.space:
+            ActivityLog.objects.create(
+                space=instance.space, actor=user, action='created',
+                entity_type='Contrat', entity_name=instance.title
+            )
+    else:
+        old_status = getattr(instance, '_old_status', None)
+        details = {}
+        if old_status and old_status != instance.status:
+            details['status'] = {'old': old_status, 'new': instance.status}
+            
+            # Notification on sign
+            if instance.status == 'signed' and old_status != 'signed' and instance.space:
+                members = instance.space.members.exclude(id=user.id)
+                notifications = [
+                    Notification(
+                        recipient=member, actor=user, type='contract_signed',
+                        title="Contrat signé", message=f"Le contrat '{instance.title}' a été signé.",
+                        link=f"/crm/spaces/{instance.space.id}?tab=contracts"
+                    ) for member in members
+                ]
+                if notifications:
+                    Notification.objects.bulk_create(notifications)
+
+        if details and instance.space:
+            ActivityLog.objects.create(
+                space=instance.space, actor=user, action='updated',
+                entity_type='Contrat', entity_name=instance.title, details=details
+            )
+
+@receiver(post_delete, sender=Contract)
+def contract_activity_log_post_delete(sender, instance, **kwargs):
+    user = get_current_user()
+    if not user or not user.is_authenticated: return
+    if instance.space:
+        ActivityLog.objects.create(
+            space=instance.space, actor=user, action='deleted',
+            entity_type='Contrat', entity_name=instance.title
+        )
+
+@receiver(post_save, sender=Meeting)
+def meeting_activity_log_post_save(sender, instance, created, **kwargs):
+    user = get_current_user()
+    if not user or not user.is_authenticated: return
+    if instance.space:
+        action = 'created' if created else 'updated'
+        ActivityLog.objects.create(
+            space=instance.space, actor=user, action=action,
+            entity_type='Réunion', entity_name=instance.title
+        )
+
+@receiver(post_delete, sender=Meeting)
+def meeting_activity_log_post_delete(sender, instance, **kwargs):
+    user = get_current_user()
+    if not user or not user.is_authenticated: return
+    if instance.space:
+        ActivityLog.objects.create(
+            space=instance.space, actor=user, action='deleted',
+            entity_type='Réunion', entity_name=instance.title
+        )
+
+@receiver(post_save, sender=Document)
+def document_activity_log_post_save(sender, instance, created, **kwargs):
+    user = get_current_user()
+    if not user or not user.is_authenticated: return
+    if created and instance.space:
+        ActivityLog.objects.create(
+            space=instance.space, actor=user, action='created',
+            entity_type='Document', entity_name=instance.name
+        )
+
+@receiver(post_delete, sender=Document)
+def document_activity_log_post_delete(sender, instance, **kwargs):
+    user = get_current_user()
+    if not user or not user.is_authenticated: return
+    if instance.space:
+        ActivityLog.objects.create(
+            space=instance.space, actor=user, action='deleted',
+            entity_type='Document', entity_name=instance.name
+        )

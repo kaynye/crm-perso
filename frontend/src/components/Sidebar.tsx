@@ -5,6 +5,7 @@ import api from '../api/axios';
 import clsx from 'clsx';
 import ActionsMenu from './ActionsMenu';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './common/NotificationBell';
 
 interface PageNode {
     id: string;
@@ -317,7 +318,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* User Section */}
-                <div className="p-4 border-t border-zinc-800 bg-zinc-900">
+                <div className="p-4 border-t border-zinc-800 bg-zinc-900 flex-shrink-0">
                     <div className="flex items-center justify-between">
                         <div
                             onClick={() => navigate('/profile')}
@@ -328,13 +329,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             </div>
                             <div className="text-sm font-medium text-gray-200">Mon Profil</div>
                         </div>
-                        <button
-                            onClick={logout}
-                            className="p-2 text-gray-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
-                            title="Déconnexion"
-                        >
-                            <LogOut size={18} />
-                        </button>
+                        <div className="flex items-center space-x-1">
+                            <NotificationBell direction="up" align="left" />
+                            <button
+                                onClick={logout}
+                                className="p-2 text-gray-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
+                                title="Déconnexion"
+                            >
+                                <LogOut size={18} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
