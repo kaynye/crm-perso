@@ -32,10 +32,7 @@ export const requestForToken = async () => {
         }
 
         const currentToken = await getToken(msg, {
-            // Optional: vapidKey is required if you use web push. 
-            // Often Firebase manages it automatically if default SW is used correctly, 
-            // but it's best practice to generate a Web Push Certificate key pair in Firebase Console
-            // and supply it here. We will attempt without it first.
+            vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
         });
 
         if (currentToken) {
