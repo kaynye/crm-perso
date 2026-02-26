@@ -23,12 +23,21 @@ def send_push_notification(user, title, body, data=None):
     if not tokens:
         return 0
         
+    webpush_config = None
+    if 'url' in data:
+        webpush_config = messaging.WebpushConfig(
+            fcm_options=messaging.WebpushFCMOptions(
+                link=data['url']
+            )
+        )
+        
     message = messaging.MulticastMessage(
         notification=messaging.Notification(
             title=title,
             body=body,
         ),
         data=data,
+        webpush=webpush_config,
         tokens=tokens,
     )
     
