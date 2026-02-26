@@ -5,12 +5,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging-comp
 // because Service Workers don't have access to import.meta.env
 // For this project, we hardcode the config you provided.
 const firebaseConfig = {
-    apiKey: "AIzaSyDHh4eiQh-5eZAdmCEBFKyXqQgaDntx-xY",
-    authDomain: "crm-perso-350db.firebaseapp.com",
-    projectId: "crm-perso-350db",
-    storageBucket: "crm-perso-350db.firebasestorage.app",
-    messagingSenderId: "594640965083",
-    appId: "1:594640965083:web:a8a0b50c02443b2b31abfe"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 firebase.initializeApp(firebaseConfig);
