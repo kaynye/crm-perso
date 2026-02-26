@@ -33,7 +33,7 @@ def send_push_notification(user, title, body, data=None):
     )
     
     try:
-        response = messaging.send_multicast(message)
+        response = messaging.send_each_for_multicast(message)
         # Handle failed tokens (e.g., app uninstalled)
         if response.failure_count > 0:
             responses = response.responses
