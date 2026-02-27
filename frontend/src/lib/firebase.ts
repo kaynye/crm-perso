@@ -11,11 +11,21 @@ const firebaseConfig = {
     appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase safely (prevents app crash if Vercel env keys are missing)
+let app: any = null;
+try {
+    if (firebaseConfig.apiKey) {
+        app = initializeApp(firebaseConfig);
+    } else {
+        console.warn("Firebase API key missing. Push notifications disabled.");
+    }
+} catch (e) {
+    console.error("Firebase init error", e);
+}
 
 // Initialize Firebase Cloud Messaging and get a reference to the service
 export const messaging = async () => {
+    if (!app) return null;
     const supported = await isSupported();
     if (supported) {
         return getMessaging(app);
