@@ -25,9 +25,22 @@ def send_push_notification(user, title, body, data=None):
         
     webpush_config = None
     if 'url' in data:
+        link = data['url']
+        # Google Web Push requires an absolute HTTPS URL
+        if not link.startswith('http'):
+            # Try to get the production frontend URL or fallback
+            base_url = os.getenv('FRONTEND_URL')
+            if not base_url:
+                if getattr(settings, 'CORS_ALLOWED_ORIGINS', None):
+                    base_url = settings.CORS_ALLOWED_ORIGINS[0]
+                else:
+                    base_url = 'https://crm-perso.vercel.app'
+            
+            link = f"{base_url.rstrip('/')}{link}"
+            
         webpush_config = messaging.WebpushConfig(
             fcm_options=messaging.WebpushFCMOptions(
-                link=data['url']
+                link=link
             )
         )
         
