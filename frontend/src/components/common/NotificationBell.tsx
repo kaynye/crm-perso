@@ -50,7 +50,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ direction = 'down',
             // Handle both paginated (Django REST standard) and unpaginated responses
             return Array.isArray(data) ? data : (data.results || []);
         },
-        refetchInterval: 30000, // Poll every 30 seconds
     });
 
     const unreadCount = notifications.filter(n => !n.is_read).length;
