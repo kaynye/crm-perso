@@ -5,10 +5,24 @@ User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     organization_name = serializers.ReadOnlyField(source='organization.name')
+    has_github = serializers.SerializerMethodField()
+    has_google_calendar = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'is_admin', 'organization', 'organization_name')
+        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'is_admin', 'organization', 'organization_name', 'has_github', 'has_google_calendar')
+
+    def get_has_github(self, obj):
+        try:
+            return bool(obj.integration.github_access_token)
+        except:
+            return False
+
+    def get_has_google_calendar(self, obj):
+        try:
+            return bool(obj.integration.google_access_token)
+        except:
+            return False
 
 from .models import Notification
 

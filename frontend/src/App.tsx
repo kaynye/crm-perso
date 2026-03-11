@@ -24,6 +24,7 @@ import Home from './pages/Home';
 
 import Profile from './pages/Profile';
 import GoogleCallback from './pages/GoogleCallback';
+import GithubCallback from './pages/GithubCallback';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -73,6 +74,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/google/callback" element={
         <ProtectedRoute>
           <GoogleCallback />
+        </ProtectedRoute>
+      } />
+      <Route path="/github/callback" element={
+        <ProtectedRoute>
+          <GithubCallback />
         </ProtectedRoute>
       } />
     </Routes>

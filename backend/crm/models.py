@@ -33,6 +33,7 @@ class Space(models.Model):
     address = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     tags = models.CharField(max_length=255, blank=True) # Comma separated for now
+    github_repo = models.CharField(max_length=255, blank=True, null=True, help_text="Format: owner/repo")
     organization = models.ForeignKey('core.Organization', on_delete=models.CASCADE, related_name='spaces')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

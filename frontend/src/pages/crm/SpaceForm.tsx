@@ -19,8 +19,11 @@ const SpaceForm: React.FC = () => {
         address: '',
         notes: '',
         tags: '',
+        github_repo: '',
     });
     const [spaceTypes, setSpaceTypes] = useState<any[]>([]);
+    const [githubRepos, setGithubRepos] = useState<any[]>([]);
+    const [loadingRepos, setLoadingRepos] = useState(false);
 
     useEffect(() => {
         const fetchSpaceTypes = async () => {
@@ -50,6 +53,7 @@ const SpaceForm: React.FC = () => {
                         address: response.data.address || '',
                         notes: response.data.notes || '',
                         tags: response.data.tags || '',
+                        github_repo: response.data.github_repo || '',
                     });
                 } catch (error) {
                     console.error("Failed to fetch space", error);
@@ -59,6 +63,22 @@ const SpaceForm: React.FC = () => {
             };
             fetchSpace();
         }
+
+        const fetchGithubRepos = async () => {
+            try {
+                setLoadingRepos(true);
+                const response = await api.get('/integrations/github/data/?action=repos');
+                if (response.data && response.data.repos) {
+                    setGithubRepos(response.data.repos);
+                }
+            } catch (error) {
+                console.error("Failed to fetch GitHub repos", error);
+                // User might not have github connected, silently fail
+            } finally {
+                setLoadingRepos(false);
+            }
+        };
+        fetchGithubRepos();
     }, [id, isEditing]);
 
     const handleDelete = async () => {
@@ -160,7 +180,28 @@ const SpaceForm: React.FC = () => {
                         </select>
                     </div>
 
-                    <div className="col-span-2">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Dépôt GitHub lié (Optionnel)</label>
+                        <select
+                            value={formData.github_repo}
+                            onChange={e => setFormData({ ...formData, github_repo: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            disabled={loadingRepos}
+                        >
+                            <option value="">-- Aucun dépôt lié --</option>
+                            {githubRepos.length === 0 && !loadingRepos && (
+                                <option disabled>Aucun dépôt disponible (connectez GitHub dans Profil)</option>
+                            )}
+                            {githubRepos.map(repo => (
+                                <option key={repo.full_name} value={repo.full_name}>
+                                    {repo.private ? '🔒 ' : '🌍 '}{repo.full_name}
+                                </option>
+                            ))}
+                        </select>
+                        {loadingRepos && <span className="text-xs text-gray-400 mt-1 block">Chargement des dépôts...</span>}
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Site Web</label>
                         <input
                             type="url"
